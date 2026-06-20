@@ -199,9 +199,23 @@ HEADER = '''<!DOCTYPE html>
 .vp-grid-2 {{ display: grid; grid-template-columns: 1fr; gap: 48px; }}
 @media (min-width: 1024px) {{ .vp-grid-2 {{ grid-template-columns: minmax(0, 1fr) 380px; gap: 64px; align-items: start; }} }}
 .vp-pricing-aside {{ position: sticky; top: 104px; }}
+@media (max-width: 1023px) {{ .vp-pricing-aside {{ position: static; top: auto; margin-top: 8px; }} }}
 .vp-price-card {{ border: 1px solid var(--color-ink-100, #e2e8f0); border-radius: 18px; padding: 28px; background: #fff; box-shadow: 0 1px 3px rgba(15,23,42,.05), 0 8px 24px rgba(15,23,42,.04); }}
 .vp-price-card + .vp-price-card {{ margin-top: 18px; }}
 .vp-price-card.featured {{ border: 2px solid var(--color-accent-500, #f59e0b); padding: 27px; }}
+@media (max-width: 767px) {{
+    .vp-price-card {{ padding: 22px; }}
+    .vp-price-card.featured {{ padding: 21px; }}
+    .vp-price-num {{ font-size: 36px !important; }}
+    /* Pricing cards side-by-side on small screens so both are above the fold */
+    .vp-pricing-aside {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }}
+    .vp-pricing-aside > .vp-price-card + .vp-price-card {{ margin-top: 0; }}
+    .vp-pricing-aside > p {{ grid-column: 1 / -1; }}
+}}
+@media (max-width: 480px) {{
+    .vp-pricing-aside {{ grid-template-columns: 1fr; }}
+    .vp-pricing-aside > .vp-price-card + .vp-price-card {{ margin-top: 16px; }}
+}}
 .vp-price-num {{ font-size: 40px; font-weight: 800; color: var(--color-ink-900, #0f172a); line-height: 1; letter-spacing: -0.025em; }}
 .vp-price-num small {{ font-size: 15px; font-weight: 500; color: var(--color-ink-500, #64748b); margin-left: 4px; }}
 .vp-feat {{ display: grid; grid-template-columns: 28px 1fr; gap: 16px; padding: 18px 0; border-top: 1px solid var(--color-ink-100, #e2e8f0); }}
@@ -280,6 +294,46 @@ HEADER = '''<!DOCTYPE html>
     border: 1px solid var(--color-ink-200, #e2e8f0);
 }}
 .mobile-nav-link:focus-visible {{ outline: 2px solid var(--color-accent-500, #f59e0b); outline-offset: 2px; }}
+
+/* Catalog comparison: table on desktop, stacked cards on mobile */
+.vp-compare-table {{ display: block; }}
+.vp-compare-cards {{ display: none; }}
+@media (max-width: 767px) {{
+    .vp-compare-table {{ display: none; }}
+    .vp-compare-cards {{ display: grid; gap: 16px; }}
+    .vp-compare-card {{
+        background: #fff;
+        border: 1px solid var(--color-ink-100, #e2e8f0);
+        border-radius: 14px;
+        padding: 20px;
+        min-width: 0;
+    }}
+    .vp-cmp-row {{
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: start;
+        padding: 10px 0;
+        border-top: 1px solid var(--color-ink-100, #e2e8f0);
+        min-width: 0;
+    }}
+    .vp-cmp-key {{
+        font-size: 13px;
+        color: var(--color-ink-600, #475569);
+        word-wrap: break-word;
+        overflow-wrap: anywhere;
+        min-width: 0;
+    }}
+    .vp-cmp-val {{
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-ink-900);
+        text-align: right;
+        word-wrap: break-word;
+        overflow-wrap: anywhere;
+        max-width: 55%;
+    }}
+}}
 
 /* Responsive table wrapper — momentum scroll on iOS, visible scrollbar */
 .table-wrap {{ overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; }}
@@ -454,16 +508,37 @@ def index_page():
         ['Offline licence verification', 'yes', 'yes', 'yes'],
         ['Self-hosted (no calls home at runtime)', 'yes', 'yes', 'yes'],
     ]
+    def fmt_cell(c, plain=False):
+        if c == 'yes': return '<span class="text-accent-600 font-bold">✓</span>' if not plain else '✓'
+        if c == 'no': return '<span class="text-ink-400">—</span>' if not plain else '—'
+        return html.escape(c)
     rows_html = '\n'.join(
         '<tr>' +
         f'<th class="text-left p-4 font-semibold text-ink-800 border-t border-ink-100" style="font-size:14px">{html.escape(r[0])}</th>' +
         ''.join(
-            f'<td class="text-center p-4 border-t border-ink-100 text-sm {"text-ink-900 font-medium" if c not in ("yes","no") else ("text-accent-600 font-bold" if c=="yes" else "text-ink-400")}">{("✓" if c=="yes" else ("—" if c=="no" else html.escape(c)))}</td>'
+            f'<td class="text-center p-4 border-t border-ink-100 text-sm {"text-ink-900 font-medium" if c not in ("yes","no") else ""}">{fmt_cell(c)}</td>'
             for c in r[1:]
         ) +
         '</tr>'
         for r in comparison_rows
     )
+    # Mobile fallback: render the same data as three cards, one per plugin
+    plugin_titles = ['Email Tracking', 'Geo Block', 'Visitor Analytics']
+    mobile_cards = []
+    for idx, title in enumerate(plugin_titles):
+        rows_for_card = '\n'.join(
+            f'<div class="vp-cmp-row">'
+            f'<span class="vp-cmp-key">{html.escape(r[0])}</span>'
+            f'<span class="vp-cmp-val">{fmt_cell(r[idx + 1])}</span>'
+            f'</div>'
+            for r in comparison_rows
+        )
+        mobile_cards.append(
+            f'<article class="vp-compare-card">'
+            f'<h3 class="font-bold text-lg text-ink-900 mb-1">{title}</h3>'
+            f'<div>{rows_for_card}</div>'
+            f'</article>'
+        )
 
     faqs = [
         ('How are the plugins licensed?', 'Each plugin is licensed individually. Monthly (£9.95/mo, cancel any time) or one-off lifetime (£199, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
@@ -502,7 +577,8 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 <p class="text-sm font-semibold uppercase tracking-wider text-accent-600">At a glance</p>
 <h2 class="mt-4 text-3xl md:text-4xl font-bold tracking-tight text-ink-900">Same shape, focused on different problems.</h2>
 </div>
-<div class="rounded-2xl border border-ink-100 bg-white table-wrap" role="region" aria-label="Plugin comparison" tabindex="0">
+<!-- Desktop / wide tablet: full comparison table -->
+<div class="vp-compare-table rounded-2xl border border-ink-100 bg-white table-wrap" role="region" aria-label="Plugin comparison" tabindex="0">
 <table class="w-full" style="min-width:640px">
 <thead>
 <tr>
@@ -514,6 +590,10 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 </thead>
 <tbody>{rows_html}</tbody>
 </table>
+</div>
+<!-- Mobile: stacked cards, one per plugin -->
+<div class="vp-compare-cards" aria-hidden="false">
+{''.join(mobile_cards)}
 </div>
 </div>
 </section>
