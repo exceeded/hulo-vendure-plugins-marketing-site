@@ -26,8 +26,9 @@ DOC_HEAD = '''<!DOCTYPE html>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
 <link rel="stylesheet" href="''' + ASTRO_CSS + '''">
 <style>
-.doc {{ display: grid; grid-template-columns: 1fr; gap: 32px; }}
-@media (min-width: 1024px) {{ .doc {{ grid-template-columns: 240px 1fr; gap: 48px; align-items: start; }} }}
+.doc {{ display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }}
+@media (min-width: 1024px) {{ .doc {{ grid-template-columns: 240px minmax(0, 1fr); gap: 48px; align-items: start; }} }}
+.doc-body {{ min-width: 0; }}
 .doc-toc {{ position: sticky; top: 96px; }}
 .doc-toc ul {{ list-style: none; padding: 0; margin: 0; }}
 .doc-toc li {{ margin-bottom: 6px; }}
@@ -49,17 +50,30 @@ DOC_HEAD = '''<!DOCTYPE html>
 .callout.warn {{ background: #fef2f2; border-color: #ef4444; }}
 .screenshot {{ margin: 22px 0; border: 1px solid var(--color-ink-200, #e2e8f0); border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 1px 3px rgba(15,23,42,.08); }}
 .screenshot-caption {{ padding: 10px 14px; background: var(--color-ink-50, #f8fafc); border-top: 1px solid var(--color-ink-100); font-size: 12px; color: var(--color-ink-600); text-align: center; }}
-.doc-body .table-wrap {{ overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 18px 0; border: 1px solid var(--color-ink-100); border-radius: 10px; }}
+.doc-body .table-wrap {{ overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 18px 0; border: 1px solid var(--color-ink-100); border-radius: 10px; max-width: 100%; }}
 .doc-body .table-wrap::-webkit-scrollbar {{ height: 8px; }}
 .doc-body .table-wrap::-webkit-scrollbar-thumb {{ background: var(--color-ink-300, #cbd5e1); border-radius: 4px; }}
-.doc-body table {{ width: 100%; border-collapse: collapse; font-size: 14px; margin: 0; min-width: 480px; }}
-.doc-body th, .doc-body td {{ text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--color-ink-100); }}
+.doc-body table {{ width: max-content; min-width: 100%; border-collapse: collapse; font-size: 14px; margin: 0; }}
+.doc-body th, .doc-body td {{ text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--color-ink-100); white-space: nowrap; }}
+.doc-body td {{ white-space: normal; max-width: 380px; }}
 .doc-body tr:last-child th, .doc-body tr:last-child td {{ border-bottom: 0; }}
-.doc-body th {{ background: var(--color-ink-50); font-weight: 600; color: var(--color-ink-900); position: sticky; left: 0; }}
-.doc-body td code {{ background: transparent; border: 0; padding: 0; font-size: 13px; }}
-.doc-body .screenshot {{ overflow-x: auto; -webkit-overflow-scrolling: touch; }}
-.doc-body .screenshot svg {{ min-width: 480px; }}
-.doc-body .doc-code {{ overflow-x: auto; -webkit-overflow-scrolling: touch; }}
+.doc-body th {{ background: var(--color-ink-50); font-weight: 600; color: var(--color-ink-900); }}
+.doc-body td code {{ background: transparent; border: 0; padding: 0; font-size: 13px; white-space: nowrap; }}
+/* Screenshot SVGs scale to viewport — no min-width so they shrink on mobile. */
+.doc-body .screenshot {{ max-width: 100%; }}
+.doc-body .screenshot svg {{ width: 100%; max-width: 100%; height: auto; display: block; }}
+.doc-body .doc-code {{ overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }}
+/* TOC: stay inside its column on mobile, hide horizontally if anything spills */
+.doc-toc {{ min-width: 0; }}
+.doc-toc ul, .doc-toc li, .doc-toc a {{ max-width: 100%; }}
+.doc-toc a {{ min-height: 40px; }}
+/* On mobile the TOC is a thin top-of-page block, not a full sidebar */
+@media (max-width: 1023px) {{
+    .doc-toc {{ background: var(--color-ink-50, #f8fafc); border-radius: 12px; padding: 14px 16px; position: relative !important; top: auto; }}
+    .doc-toc ul {{ display: flex; flex-wrap: wrap; gap: 6px; }}
+    .doc-toc li {{ margin: 0; }}
+    .doc-toc a {{ padding: 8px 12px; min-height: 36px; background: #fff; border: 1px solid var(--color-ink-100); border-radius: 6px; font-size: 13px; }}
+}}
 </style>
 </head>
 <body>
@@ -71,10 +85,10 @@ DOC_HEAD = '''<!DOCTYPE html>
 <span class="font-bold text-ink-900 tracking-tight text-lg">Hulo Global</span>
 </a>
 <nav class="hidden md:block">
-<ul class="flex items-center gap-8 text-sm font-medium text-ink-700">
-<li><a href="/" class="hover:text-ink-900">Home</a></li>
-<li><a href="/vendure-plugins/" class="hover:text-ink-900">Vendure plugins</a></li>
-<li><a href="/vendure-plugins/{slug}/" class="hover:text-ink-900">← Back to {title_short}</a></li>
+<ul class="flex items-center gap-6 text-sm font-medium text-ink-700">
+<li><a href="/" class="hover:text-ink-900 py-3 px-2 inline-block">Home</a></li>
+<li><a href="/vendure-plugins/" class="hover:text-ink-900 py-3 px-2 inline-block">Vendure plugins</a></li>
+<li><a href="/vendure-plugins/{slug}/" class="hover:text-ink-900 py-3 px-2 inline-block">← Back to {title_short}</a></li>
 </ul>
 </nav>
 </div>

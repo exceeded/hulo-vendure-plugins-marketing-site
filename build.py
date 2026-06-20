@@ -269,6 +269,18 @@ HEADER = '''<!DOCTYPE html>
 .ccy-select:hover {{ border-color: var(--color-ink-300, #cbd5e1); }}
 .ccy-select-mobile {{ font-size: 13px; padding: 8px 28px 8px 12px; min-height: 40px; }}
 
+.mobile-controls {{ display: flex; align-items: center; gap: 12px; }}
+.mobile-nav-link {{
+    padding: 10px 14px; min-height: 44px;
+    display: inline-flex; align-items: center;
+    border-radius: 8px;
+    background: var(--color-ink-50, #f8fafc);
+    color: var(--color-ink-800, #1e293b);
+    font-size: 14px; font-weight: 600; text-decoration: none;
+    border: 1px solid var(--color-ink-200, #e2e8f0);
+}}
+.mobile-nav-link:focus-visible {{ outline: 2px solid var(--color-accent-500, #f59e0b); outline-offset: 2px; }}
+
 /* Responsive table wrapper — momentum scroll on iOS, visible scrollbar */
 .table-wrap {{ overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; }}
 .table-wrap::-webkit-scrollbar {{ height: 8px; }}
@@ -284,10 +296,10 @@ HEADER = '''<!DOCTYPE html>
 <span class="font-bold text-ink-900 tracking-tight text-lg">Hulo Global</span>
 </a>
 <nav aria-label="Primary" class="hidden md:flex md:items-center md:gap-6">
-<ul class="flex items-center gap-8 text-sm font-medium text-ink-700">
-<li><a href="/" class="hover:text-ink-900 transition-colors">Home</a></li>
-<li><a href="/vendure-plugins/" class="hover:text-ink-900 transition-colors">Vendure plugins</a></li>
-<li><a href="/#contact" class="hover:text-ink-900 transition-colors">Contact</a></li>
+<ul class="flex items-center gap-6 text-sm font-medium text-ink-700">
+<li><a href="/" class="hover:text-ink-900 transition-colors py-3 px-2 inline-block">Home</a></li>
+<li><a href="/vendure-plugins/" class="hover:text-ink-900 transition-colors py-3 px-2 inline-block">Vendure plugins</a></li>
+<li><a href="/#contact" class="hover:text-ink-900 transition-colors py-3 px-2 inline-block">Contact</a></li>
 </ul>
 <div class="ccy-picker-wrap">
 <label for="ccy-picker" class="ccy-label">Currency:</label>
@@ -300,7 +312,9 @@ HEADER = '''<!DOCTYPE html>
 </select>
 </div>
 </nav>
-<div class="ccy-picker-wrap md:hidden">
+<div class="mobile-controls md:hidden">
+<a href="/vendure-plugins/" class="mobile-nav-link" aria-label="Vendure plugins">Plugins</a>
+<div class="ccy-picker-wrap">
 <label for="ccy-picker-mobile" class="sr-only">Currency</label>
 <select id="ccy-picker-mobile" name="currency" class="ccy-select ccy-select-mobile">
 <option value="GBP">£ GBP</option>
@@ -309,6 +323,7 @@ HEADER = '''<!DOCTYPE html>
 <option value="AUD">A$ AUD</option>
 <option value="CAD">C$ CAD</option>
 </select>
+</div>
 </div>
 <div id="ccy-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 </div>
