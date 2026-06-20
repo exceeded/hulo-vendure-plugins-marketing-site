@@ -514,9 +514,9 @@ def index_page():
         return html.escape(c)
     rows_html = '\n'.join(
         '<tr>' +
-        f'<th class="text-left p-4 font-semibold text-ink-800 border-t border-ink-100" style="font-size:14px">{html.escape(r[0])}</th>' +
+        f'<th class="p-4 font-semibold text-ink-800 border-t border-ink-100" style="font-size:14px; text-align:left">{html.escape(r[0])}</th>' +
         ''.join(
-            f'<td class="text-center p-4 border-t border-ink-100 text-sm {"text-ink-900 font-medium" if c not in ("yes","no") else ""}">{fmt_cell(c)}</td>'
+            f'<td class="p-4 border-t border-ink-100 text-sm {"text-ink-900 font-medium" if c not in ("yes","no") else ""}" style="text-align:center; vertical-align:middle">{fmt_cell(c)}</td>'
             for c in r[1:]
         ) +
         '</tr>'
@@ -582,10 +582,10 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 <table class="w-full" style="min-width:640px">
 <thead>
 <tr>
-<th class="text-left p-4 font-medium text-sm text-ink-500"></th>
-<th class="text-center p-4 font-semibold text-ink-900">Email Tracking</th>
-<th class="text-center p-4 font-semibold text-ink-900">Geo Block</th>
-<th class="text-center p-4 font-semibold text-ink-900">Visitor Analytics</th>
+<th class="p-4 font-medium text-sm text-ink-500" style="text-align:left"></th>
+<th class="p-4 font-semibold text-ink-900" style="text-align:center">Email Tracking</th>
+<th class="p-4 font-semibold text-ink-900" style="text-align:center">Geo Block</th>
+<th class="p-4 font-semibold text-ink-900" style="text-align:center">Visitor Analytics</th>
 </tr>
 </thead>
 <tbody>{rows_html}</tbody>
