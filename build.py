@@ -448,14 +448,28 @@ CURRENCY_JS = '''
 FOOTER = CURRENCY_JS + '''
 </main>
 <footer class="border-t border-ink-100 bg-ink-50 mt-20">
-<div class="container-page py-10 grid gap-6 sm:grid-cols-2">
+<div class="container-page py-10 grid gap-8 sm:grid-cols-3">
 <div>
-<p class="text-sm text-ink-700">Hulo Global Limited — UK Companies House 17134928</p>
-<p class="text-sm text-ink-600 mt-1">Unit A, 82 James Carter Road, Mildenhall, IP28 7DE, United Kingdom</p>
+<p class="text-sm text-ink-700">Hulo Global Limited</p>
+<p class="text-xs text-ink-600 mt-1">UK Companies House 17134928</p>
+<p class="text-xs text-ink-600 mt-1">Unit A, 82 James Carter Road,<br>Mildenhall, IP28 7DE, UK</p>
 </div>
-<div class="sm:text-right">
-<p class="text-sm text-ink-700"><a href="mailto:hello@huloglobal.com" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">hello@huloglobal.com</a></p>
-<p class="text-sm text-ink-600 mt-1"><a href="/vendure-plugins/" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">Vendure plugins</a></p>
+<div>
+<p class="text-xs uppercase tracking-wider text-ink-500 font-semibold mb-3">Vendure plugins</p>
+<ul class="space-y-1.5 text-sm text-ink-700">
+<li><a href="/vendure-plugins/" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">All plugins</a></li>
+<li><a href="/vendure-plugins/email-tracking/" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">Email Tracking</a></li>
+<li><a href="/vendure-plugins/geo-block/" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">Geo Block</a></li>
+<li><a href="/vendure-plugins/visitor-analytics/" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">Visitor Analytics</a></li>
+</ul>
+</div>
+<div>
+<p class="text-xs uppercase tracking-wider text-ink-500 font-semibold mb-3">Customers</p>
+<ul class="space-y-1.5 text-sm text-ink-700">
+<li><a href="https://elite.charity/licence/forgot" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">Lost your key?</a></li>
+<li><a href="https://elite.charity/licence/privacy" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">Your data &amp; privacy</a></li>
+<li><a href="mailto:hello@huloglobal.com" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">hello@huloglobal.com</a></li>
+</ul>
 </div>
 </div>
 </footer>
@@ -554,7 +568,10 @@ def index_page():
 
     faqs = [
         ('How are the plugins licensed?', 'Each plugin is licensed individually. Monthly subscription with a <strong>7-day free trial</strong> (then £9.95/mo, cancel any time), or one-off lifetime (£199, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
-        ('How does the free trial work?', 'Pick the monthly plan and enter your email. We collect a payment method via Stripe but don\'t charge for 7 days. Cancel any time in the first 7 days and pay nothing. Trials are limited to one per customer — the same card can\'t be used for a second trial under a different email.'),
+        ('How does the free trial work?', 'Pick the monthly plan and enter your email. We collect a payment method via Stripe but don\'t charge for 7 days — and we\'ll send a reminder email 2 days before the trial ends so you can cancel if you change your mind. Trials are limited to one per customer; we detect repeat attempts by the card fingerprint, not just the email.'),
+        ('How do I manage / cancel my subscription?', 'Every receipt email includes a Stripe Customer Portal link — click it to update your payment method, see invoices, or cancel. No need to email us. Lifetime customers have nothing to manage; reply to your receipt if you need a VAT invoice.'),
+        ('I lost my licence key — what now?', 'Re-send every active key on file at <a class="underline underline-offset-2" href="https://elite.charity/licence/forgot">elite.charity/licence/forgot</a>. We always show the same confirmation regardless of whether the email is on file (anti-enumeration), so check spam if nothing arrives. Limited to 5 requests per email per day.'),
+        ('Can I export or delete my data?', 'Yes — under UK GDPR you have a right to see, export and erase the personal data we hold. Visit <a class="underline underline-offset-2" href="https://elite.charity/licence/privacy">elite.charity/licence/privacy</a> and we\'ll email you a magic link to do both.'),
         ('Do the plugins call home?', 'No — licence verification is offline. Each plugin verifies the JWT at boot against an embedded public key. A revocation list is polled once a week (cached, soft-fail), so a brief outage at our end never disables your store. Nothing else leaves your server.'),
         ('Where does customer data live?', 'On your Vendure server — same DB as the rest of your data. No third-party analytics provider. The visitor-analytics plugin\'s ingest endpoint is on your domain.'),
         ('What if I don\'t buy a licence?', 'Plugins still boot in a degraded "evaluation" mode — install, configure, browse data, and the admin UI is functional. The public storefront endpoints are limited (geo-block always reports `enabled:false`; visitor-analytics dashboards return 403). Buy a key when you\'re ready.'),
