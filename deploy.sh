@@ -39,20 +39,21 @@ ROOT=/var/www/huloglobal/current/dist/client
 echo "→ Build"
 python3 build.py
 python3 build_manuals.py
+python3 build_legal.py
 
 echo
 echo "→ Tar"
 TARBALL=$(mktemp -t hulo-vp-XXXX.tgz)
-tar czf "$TARBALL" -C dist vendure-plugins
+tar czf "$TARBALL" -C dist vendure-plugins legal
 
 echo "→ Upload to $BOX"
 if [[ -n "${SSHPASS:-}" ]]; then
     sshpass -e scp -q -o StrictHostKeyChecking=no "$TARBALL" "$BOX:/tmp/vp-pages.tgz"
     sshpass -e ssh -q -o StrictHostKeyChecking=no "$BOX" "
         set -e
-        rm -rf $ROOT/vendure-plugins
+        rm -rf $ROOT/vendure-plugins $ROOT/legal
         tar xzf /tmp/vp-pages.tgz -C $ROOT
-        chown -R huloglobal:huloglobal $ROOT/vendure-plugins
+        chown -R huloglobal:huloglobal $ROOT/vendure-plugins $ROOT/legal
         chmod +x $ROOT/vendure-plugins/*/install.sh
         rm /tmp/vp-pages.tgz
     "
@@ -60,9 +61,9 @@ else
     scp -q "$TARBALL" "$BOX:/tmp/vp-pages.tgz"
     ssh -q "$BOX" "
         set -e
-        rm -rf $ROOT/vendure-plugins
+        rm -rf $ROOT/vendure-plugins $ROOT/legal
         tar xzf /tmp/vp-pages.tgz -C $ROOT
-        chown -R huloglobal:huloglobal $ROOT/vendure-plugins
+        chown -R huloglobal:huloglobal $ROOT/vendure-plugins $ROOT/legal
         chmod +x $ROOT/vendure-plugins/*/install.sh
         rm /tmp/vp-pages.tgz
     "
@@ -78,7 +79,12 @@ for url in \
     "https://huloglobal.com/vendure-plugins/visitor-analytics/" \
     "https://huloglobal.com/vendure-plugins/email-tracking/docs/" \
     "https://huloglobal.com/vendure-plugins/geo-block/docs/" \
-    "https://huloglobal.com/vendure-plugins/visitor-analytics/docs/"
+    "https://huloglobal.com/vendure-plugins/visitor-analytics/docs/" \
+    "https://huloglobal.com/legal/" \
+    "https://huloglobal.com/legal/terms/" \
+    "https://huloglobal.com/legal/privacy/" \
+    "https://huloglobal.com/legal/cookies/" \
+    "https://huloglobal.com/legal/acceptable-use/"
 do
     status=$(curl -sSI -m 8 "$url" | head -1 | tr -d '\r')
     echo "  $status  $url"
@@ -94,7 +100,7 @@ echo
 echo "→ Git"
 if ! git diff --quiet -- build.py build_manuals.py deploy.sh README.md 2>/dev/null \
    || ! git diff --cached --quiet -- build.py build_manuals.py deploy.sh README.md 2>/dev/null; then
-    git add build.py build_manuals.py deploy.sh README.md 2>/dev/null || true
+    git add build.py build_manuals.py build_legal.py deploy.sh README.md 2>/dev/null || true
     if [[ -z "$MSG" ]]; then
         MSG="Deploy marketing site — $(date -u +%Y-%m-%d)"
     fi
