@@ -12,7 +12,25 @@ Drop dist/vendure-plugins into /var/www/huloglobal/current/dist/client/.
 """
 from pathlib import Path
 import html
+import json
+import subprocess
 import textwrap
+
+
+def fetch_npm_version(pkg: str) -> str | None:
+    """Best-effort fetch of the latest version on the public npm registry.
+
+    Falls back to the hardcoded value in the PLUGINS table when the
+    network is unavailable, so the build still works offline."""
+    try:
+        out = subprocess.check_output(
+            ['npm', 'view', pkg, 'version'],
+            stderr=subprocess.DEVNULL, timeout=8,
+        )
+        v = out.decode().strip()
+        return v or None
+    except Exception:
+        return None
 
 HERE = Path(__file__).parent
 OUT = HERE / 'dist' / 'vendure-plugins'
@@ -880,6 +898,15 @@ def install_sh(p):
 
 
 def main():
+    # Refresh the version numbers from npm. Falls back to the hardcoded
+    # value when offline so the build always works.
+    for p in PLUGINS:
+        latest = fetch_npm_version(p['pkg'])
+        if latest:
+            if latest != p['version']:
+                print(f"  {p['pkg']}: {p['version']} → {latest} (npm)")
+            p['version'] = latest
+
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / 'index.html').write_text(index_page(), encoding='utf-8')
     for p in PLUGINS:
