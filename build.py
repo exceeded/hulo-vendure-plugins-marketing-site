@@ -217,7 +217,19 @@ HEADER = '''<!DOCTYPE html>
     .vp-pricing-aside > .vp-price-card + .vp-price-card {{ margin-top: 16px; }}
 }}
 .vp-price-num {{ font-size: 40px; font-weight: 800; color: var(--color-ink-900, #0f172a); line-height: 1; letter-spacing: -0.025em; }}
-.vp-price-num small {{ font-size: 15px; font-weight: 500; color: var(--color-ink-500, #64748b); margin-left: 4px; }}
+.vp-price-num small {{ font-size: 15px; font-weight: 500; color: var(--color-ink-500, #64748b); margin-left: 6px; }}
+.vp-trial-num {{ color: var(--color-accent-600, #d97706); }}
+.vp-email-input {{
+    width: 100%; box-sizing: border-box;
+    padding: 12px 14px; min-height: 44px;
+    border: 1px solid var(--color-ink-200, #e2e8f0);
+    border-radius: 8px;
+    font-size: 16px;
+    background: #fff;
+    color: var(--color-ink-900);
+}}
+.vp-email-input:focus-visible {{ outline: 2px solid var(--color-accent-500, #f59e0b); outline-offset: 2px; border-color: transparent; }}
+.vp-tiny-note {{ font-size: 12px; color: var(--color-ink-500); margin-top: 10px; text-align: center; }}
 .vp-feat {{ display: grid; grid-template-columns: 28px 1fr; gap: 16px; padding: 18px 0; border-top: 1px solid var(--color-ink-100, #e2e8f0); }}
 .vp-feat:first-of-type {{ border-top: 0; padding-top: 4px; }}
 .vp-feat-tick {{ width: 28px; height: 28px; border-radius: 999px; background: var(--color-accent-50, #fffbeb); display: grid; place-items: center; color: var(--color-accent-600, #d97706); }}
@@ -541,7 +553,8 @@ def index_page():
         )
 
     faqs = [
-        ('How are the plugins licensed?', 'Each plugin is licensed individually. Monthly (£9.95/mo, cancel any time) or one-off lifetime (£199, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
+        ('How are the plugins licensed?', 'Each plugin is licensed individually. Monthly subscription with a <strong>7-day free trial</strong> (then £9.95/mo, cancel any time), or one-off lifetime (£199, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
+        ('How does the free trial work?', 'Pick the monthly plan and enter your email. We collect a payment method via Stripe but don\'t charge for 7 days. Cancel any time in the first 7 days and pay nothing. Trials are limited to one per customer — the same card can\'t be used for a second trial under a different email.'),
         ('Do the plugins call home?', 'No — licence verification is offline. Each plugin verifies the JWT at boot against an embedded public key. A revocation list is polled once a week (cached, soft-fail), so a brief outage at our end never disables your store. Nothing else leaves your server.'),
         ('Where does customer data live?', 'On your Vendure server — same DB as the rest of your data. No third-party analytics provider. The visitor-analytics plugin\'s ingest endpoint is on your domain.'),
         ('What if I don\'t buy a licence?', 'Plugins still boot in a degraded "evaluation" mode — install, configure, browse data, and the admin UI is functional. The public storefront endpoints are limited (geo-block always reports `enabled:false`; visitor-analytics dashboards return 403). Buy a key when you\'re ready.'),
@@ -681,14 +694,16 @@ export const config: VendureConfig = {{
 </div>
 <aside class="vp-pricing-aside">
 <div class="vp-price-card">
-<p class="text-xs uppercase tracking-wider text-ink-500 font-semibold">Monthly</p>
-<p class="vp-price-num mt-2"><span data-monthly-price>£9.95</span><small>/mo</small></p>
-<p class="mt-2 text-sm text-ink-600">Cancel any time. Updates included.</p>
+<p class="text-xs uppercase tracking-wider text-accent-600 font-semibold">Monthly · 7 days free</p>
+<p class="vp-price-num mt-2"><span class="vp-trial-num">7</span><small>days free</small></p>
+<p class="mt-2 text-sm text-ink-700">Then <span data-monthly-price>£9.95</span>/month. Cancel anytime before day 8 and pay nothing.</p>
 <form method="post" action="{CHECKOUT_URL}" class="mt-5">
 <input type="hidden" name="pluginId" value="{pkg_short}">
 <input type="hidden" name="plan" value="monthly">
 <input type="hidden" name="currency" value="GBP" data-currency-input>
-<button type="submit" class="btn btn-secondary w-full">Subscribe →</button>
+<input type="email" name="email" placeholder="Your email (required for trial)" autocomplete="email" required class="vp-email-input">
+<button type="submit" class="btn btn-secondary w-full mt-3">Start 7-day free trial →</button>
+<p class="vp-tiny-note">Card required. One trial per customer.</p>
 </form>
 </div>
 <div class="vp-price-card featured">
