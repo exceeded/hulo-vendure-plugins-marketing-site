@@ -732,27 +732,16 @@ export const config: VendureConfig = {{
 <p class="text-xs uppercase tracking-wider text-accent-600 font-semibold">Monthly · 7 days free</p>
 <p class="vp-price-num mt-2"><span class="vp-trial-num">7</span><small>days free</small></p>
 <p class="mt-2 text-sm text-ink-700">Then <span data-monthly-price>£9.95</span>/month. Cancel anytime before day 8 and pay nothing.</p>
-<form method="post" action="{CHECKOUT_URL}" class="mt-5">
-<input type="hidden" name="pluginId" value="{pkg_short}">
-<input type="hidden" name="plan" value="monthly">
-<input type="hidden" name="currency" value="GBP" data-currency-input>
-<input type="email" name="email" placeholder="Your email (required for trial)" autocomplete="email" required class="vp-email-input">
-<button type="submit" class="btn btn-secondary w-full mt-3">Start 7-day free trial →</button>
+<a href="{BUY_BASE}/{pkg_short}?plan=monthly" class="btn btn-secondary w-full mt-5" style="text-align:center">Start 7-day free trial →</a>
 <p class="vp-tiny-note">Card required. One trial per customer.</p>
-</form>
 </div>
 <div class="vp-price-card featured">
 <p class="text-xs uppercase tracking-wider text-accent-600 font-semibold">Lifetime · Best value</p>
 <p class="vp-price-num mt-2" data-lifetime-price>£199</p>
 <p class="mt-2 text-sm text-ink-600">One-off. Never expires. 12 months of updates.</p>
-<form method="post" action="{CHECKOUT_URL}" class="mt-5">
-<input type="hidden" name="pluginId" value="{pkg_short}">
-<input type="hidden" name="plan" value="lifetime">
-<input type="hidden" name="currency" value="GBP" data-currency-input>
-<button type="submit" class="btn btn-primary w-full">Buy lifetime →</button>
-</form>
+<a href="{BUY_BASE}/{pkg_short}?plan=lifetime" class="btn btn-primary w-full mt-5" style="text-align:center">Buy lifetime →</a>
 </div>
-<p class="mt-4 text-xs text-ink-500 leading-relaxed">Payments processed by Stripe. VAT applied where applicable. 30-day refund if it doesn't fit your stack.</p>
+<p class="mt-4 text-xs text-ink-500 leading-relaxed">Payments processed by Stripe. VAT applied where applicable. 30-day refund if it doesn't fit your stack. By proceeding you accept our <a href="/legal/terms/" class="underline">Terms</a> and <a href="/legal/privacy/" class="underline">Privacy Policy</a>.</p>
 </aside>
 </div>
 </div>
