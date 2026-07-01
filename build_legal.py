@@ -365,7 +365,8 @@ PRIVACY_BODY += '''
 <tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Stripe identifiers (customer id, subscription id, payment intent id)</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">stored with the licence record</td></tr>
 <tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">IP address</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">in temporary rate-limit memory for the public endpoints; not persisted</td></tr>
 <tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Domain name (the hostname your licence is bound to)</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">embedded in the licence key; collected when you tell us</td></tr>
-<tr><td style="padding:10px 12px">Correspondence</td><td style="padding:10px 12px">when you email us</td></tr>
+<tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Correspondence</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">when you email us</td></tr>
+<tr><td style="padding:10px 12px">Plugin heartbeat (plugin name, version, licence jti, SHA-256 fingerprint of the embedded public key + verifier source, uptime in seconds)</td><td style="padding:10px 12px">sent automatically by each plugin to <code>elite.charity/licence/heartbeat</code> once a day. Contains <strong>no personal data of you or your end users</strong>. The source IP is hashed with a per-install salt at insert time and the raw IP is never stored. You can opt out by setting <code>HULO_HEARTBEAT_DISABLED=true</code> in the host environment.</td></tr>
 </tbody>
 </table>
 
@@ -378,6 +379,7 @@ PRIVACY_BODY += '''
 <tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Send a trial-ending reminder (~2 days before billing)</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Performance of contract</td></tr>
 <tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Detect trial abuse via card fingerprint</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Legitimate interest (preventing financial loss); balanced against your interest with strict scope: only the fingerprint, not the card</td></tr>
 <tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Rate-limit public endpoints to prevent abuse</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Legitimate interest (security)</td></tr>
+<tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Receive daily plugin heartbeats (anti-tamper telemetry)</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Legitimate interest (preventing licence circumvention + identifying installs running modified or known-bad builds when triaging support). No personal data is collected; opt-out via <code>HULO_HEARTBEAT_DISABLED=true</code></td></tr>
 <tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Respond to your support requests</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Performance of contract</td></tr>
 </tbody>
 </table>
@@ -478,7 +480,8 @@ AUP_BODY = '''
 <ul>
 <li><strong>Resell, sublicense or redistribute</strong> the plugins or the licence key. Each licence is tied to one Vendure installation (one hostname).</li>
 <li><strong>Reverse engineer for the purpose of competing.</strong> Reading the code on GitHub for educational or interoperability purposes is fine. Cloning, rebranding and reselling is not.</li>
-<li><strong>Bypass the licence verification.</strong> If we publish a defect that lets the verifier be skipped, please tell us instead of exploiting it.</li>
+<li><strong>Bypass, remove, modify or disable the licence verification.</strong> The plugins check a signed licence at boot and again at multiple points throughout their lifecycle. Removing, commenting out, replacing, recompiling, monkey-patching or otherwise circumventing any of those checks — including replacing the embedded public key with your own — is a material breach of these Terms and infringes the AGPL-3.0 source licence. If you find a defect that lets the verifier be skipped accidentally, please report it under "Reporting security issues" instead of exploiting it.</li>
+<li><strong>Disable the anti-tamper heartbeat for purposes other than air-gapped operation.</strong> Each plugin sends a daily fingerprint of its embedded public key + verifier source to <code>elite.charity/licence/heartbeat</code> (no personal data; see Privacy Policy). The opt-out (<code>HULO_HEARTBEAT_DISABLED=true</code>) is provided for genuinely air-gapped or sensitive operational environments. Setting it for any other reason — particularly to conceal that the install has been modified — is a breach of these Terms.</li>
 <li><strong>Use the plugins to commit, facilitate or conceal an offence under UK law.</strong> Examples: hosting illegal content; using the visitor-analytics plugin to track users without lawful basis; using the email-tracking plugin to send unsolicited bulk email; using the geo-block plugin to enforce a denial of access on a sanctioned basis (e.g. refusing service on the basis of a protected characteristic).</li>
 <li><strong>Misrepresent your relationship with us.</strong> We do not endorse third-party services; you may not claim a partnership we have not granted.</li>
 <li><strong>Stress-test or attempt to compromise the public endpoints we operate</strong> (elite.charity/licence/*, huloglobal.com). Reasonable security research is welcomed — see "Reporting security issues" below.</li>
@@ -498,6 +501,89 @@ AUP_BODY = '''
 '''
 
 # ──────────────────────────────────────────────────────────────────────
+# Data Processing Addendum (DPA)
+# ──────────────────────────────────────────────────────────────────────
+
+DPA_BODY = '''
+<p class="lede">This Data Processing Addendum (the "<strong>DPA</strong>") forms part of the <a href="/legal/terms/">Terms of Service</a> between you (the <strong>Controller</strong>) and ''' + COMPANY['name'] + ''' (the <strong>Processor</strong>). It governs any processing of personal data we perform on your behalf.</p>
+
+<blockquote><strong>When this DPA applies to you.</strong> In most cases when you buy our plugins, you remain the sole controller of the personal data the plugins capture about your end users — the plugins run on your servers and we never see that data. This DPA only takes effect for the limited situations where we do act as a processor (e.g. you use a future managed-hosting offering or paid support tier that requires us to handle your data).</blockquote>
+
+<h2>1. Definitions</h2>
+<p>"UK GDPR" means the United Kingdom General Data Protection Regulation as defined in the Data Protection Act 2018. "Data Protection Laws" means the UK GDPR, the Data Protection Act 2018, the EU GDPR where applicable, the Privacy and Electronic Communications Regulations 2003 (PECR), and any successor or supplementary legislation.</p>
+<p>"Personal Data", "Process", "Controller", "Processor", "Data Subject" and "Supervisory Authority" have the meanings given in Data Protection Laws.</p>
+
+<h2>2. Subject matter, duration, nature and purpose</h2>
+<p>
+<strong>Subject matter</strong> — processing as needed to provide our Vendure plugins and related customer-facing services.<br>
+<strong>Duration</strong> — for the period the Controller has an active licence + the retention periods set out in our Privacy Policy.<br>
+<strong>Nature and purpose</strong> — issuing, delivering, renewing and revoking licences; payment processing via Stripe; transactional support email; security monitoring.<br>
+<strong>Categories of data subject</strong> — the Controller\'s authorised representatives (typically the developer or finance contact who buys the licence).<br>
+<strong>Categories of personal data</strong> — name, email address, billing address, VAT number, payment-card fingerprint (a SHA-256 hash from Stripe; not the card number), Stripe customer/subscription IDs.<br>
+<strong>Special categories</strong> — none.
+</p>
+
+<h2>3. Processor obligations</h2>
+<p>The Processor will:</p>
+<ul>
+<li>Process Personal Data only on documented instructions from the Controller (these Terms + this DPA are such instructions);</li>
+<li>Ensure persons authorised to process Personal Data are bound by confidentiality;</li>
+<li>Implement appropriate technical and organisational security measures (see Annex 2);</li>
+<li>Assist the Controller in responding to Data Subject requests under Articles 15-22 UK GDPR, by providing the self-service endpoints at <code>elite.charity/licence/privacy</code> and <code>elite.charity/licence/forgot</code>;</li>
+<li>Notify the Controller without undue delay (and in any event within 72 hours) of becoming aware of a Personal Data breach;</li>
+<li>Assist the Controller with DPIAs and consultations with the Supervisory Authority where reasonably required;</li>
+<li>At the Controller\'s choice on termination, delete or return all Personal Data, subject to record-keeping required by law.</li>
+</ul>
+
+<h2>4. Sub-processors</h2>
+<p>The Controller authorises the Processor to engage the sub-processors listed in Annex 1. The Processor will inform the Controller of any intended addition or replacement of a sub-processor and give the Controller a reasonable opportunity to object on substantial grounds.</p>
+<p>The Processor remains liable for the acts and omissions of its sub-processors.</p>
+
+<h2>5. International transfers</h2>
+<p>Where Personal Data is transferred outside the UK and EEA, the parties rely on the UK Addendum to the EU Standard Contractual Clauses (UK ICO IDTA) or the UK-US Data Bridge / EU-US Data Privacy Framework as applicable. Annex 1 lists the lawful basis for each named sub-processor.</p>
+
+<h2>6. Audit</h2>
+<p>The Controller may, on 30 days\' written notice and no more than once per 12 months, audit the Processor\'s compliance with this DPA — either by requesting a written self-assessment or, where reasonable and necessary, by visiting the Processor\'s offices during normal business hours. Audits must not disproportionately disrupt the Processor\'s business and must respect the confidentiality of other customers\' data.</p>
+
+<h2>7. Liability</h2>
+<p>The liability cap in section 17 of the Terms of Service applies to this DPA. Each party\'s liability under Data Protection Laws is several, not joint — each party is responsible for its own acts and omissions.</p>
+
+<h2>8. Survival</h2>
+<p>Sections 3 (Processor obligations), 5 (International transfers) and 7 (Liability) survive termination of this DPA for so long as the Processor holds any Personal Data of the Controller.</p>
+
+<h2 style="margin-top:48px">Annex 1 — Sub-processors</h2>
+<table style="margin:8px 0;width:100%;border-collapse:collapse;font-size:13px">
+<thead><tr style="background:#f8fafc"><th style="text-align:left;padding:10px 12px;border-bottom:1px solid #e2e8f0">Provider</th><th style="text-align:left;padding:10px 12px;border-bottom:1px solid #e2e8f0">Purpose</th><th style="text-align:left;padding:10px 12px;border-bottom:1px solid #e2e8f0">Location / lawful basis for transfer</th></tr></thead>
+<tbody>
+<tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Stripe Payments Europe, Ltd</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Payment processing, billing portal, invoices</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Ireland (EEA) with US transfers under the EU-US DPF</td></tr>
+<tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Google Workspace (Google Ireland Ltd)</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">SMTP relay for transactional email</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Ireland (EEA), UK-US Data Bridge</td></tr>
+<tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">Cloudflare, Inc</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">TLS termination, DDoS protection, IP geolocation</td><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">US, EU-US DPF</td></tr>
+<tr><td style="padding:10px 12px">GitHub, Inc</td><td style="padding:10px 12px">Source hosting (no end-user personal data)</td><td style="padding:10px 12px">US, EU-US DPF</td></tr>
+</tbody>
+</table>
+
+<h2>Annex 2 — Security measures</h2>
+<ul>
+<li>Encryption in transit (TLS 1.2+ on every public endpoint).</li>
+<li>HMAC-SHA256 verification on every inbound webhook (Stripe + bounce notifications).</li>
+<li>HMAC-signed cookies on the visitor-analytics plugin so tampered values are rejected.</li>
+<li>HMAC-signed open/click URLs on the email-tracking plugin so forged tracking events are rejected.</li>
+<li>Rate-limiting on every public endpoint to defeat enumeration + DoS.</li>
+<li>Security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, Cross-Origin-Resource-Policy) on every response.</li>
+<li>IP addresses stored as a SHA-256 hash with a per-install salt where stored at all.</li>
+<li>RSA private signing key held at <code>/etc/hulo/licence/private.pem</code>, mode 600, root-only.</li>
+<li>AES-256-CBC + PBKDF2-250000 encrypted weekly backups of the signing key, integrity-verified weekly off-site.</li>
+<li>Offline JWT verification — the signing key never leaves our servers, never appears in an HTTP request body.</li>
+<li>Webhook idempotency via a dedicated <code>WebhookEvent</code> table so retries cannot double-process.</li>
+<li>Process-level error monitoring with all Personal Data scrubbed before events leave our servers.</li>
+</ul>
+
+<h2>How to execute</h2>
+<p>This DPA is offered on a counterpart-not-required basis: by accepting our Terms of Service you are deemed to accept it where applicable. If you require a counter-signed copy (for example for your own internal records or compliance with a customer of your own), email <a href="mailto:''' + COMPANY['email'] + '''">''' + COMPANY['email'] + '''</a> and we will exchange signatures by DocuSign or equivalent.</p>
+'''
+
+
+# ──────────────────────────────────────────────────────────────────────
 # Legal index
 # ──────────────────────────────────────────────────────────────────────
 
@@ -510,6 +596,7 @@ INDEX_BODY += '''
 <li><a href="/legal/privacy/"><strong>Privacy Policy</strong></a> — what personal data we collect, why, and how to exercise your rights.</li>
 <li><a href="/legal/cookies/"><strong>Cookie Policy</strong></a> — what cookies we do (and don\'t) set.</li>
 <li><a href="/legal/acceptable-use/"><strong>Acceptable Use Policy</strong></a> — the things you must not do with the plugins.</li>
+<li><a href="/legal/dpa/"><strong>Data Processing Addendum</strong></a> — UK GDPR processor obligations for B2B customers.</li>
 </ul>
 <p style="margin-top:32px">Want to exercise your right to access or delete the data we hold about you? Visit <a href="https://elite.charity/licence/privacy">elite.charity/licence/privacy</a>.</p>
 <p>Lost your licence key? <a href="https://elite.charity/licence/forgot">elite.charity/licence/forgot</a>.</p>
@@ -532,6 +619,7 @@ def main():
         ('privacy', 'Privacy Policy', 'Privacy Policy for Hulo Global Limited — what personal data we collect, why, and how to exercise your UK/EU GDPR rights.', PRIVACY_BODY),
         ('cookies', 'Cookie Policy', 'Cookie Policy for huloglobal.com and elite.charity — what cookies we set and which we don\'t.', COOKIES_BODY),
         ('acceptable-use', 'Acceptable Use Policy', 'What you must not do with Hulo Global\'s Vendure plugins.', AUP_BODY),
+        ('dpa', 'Data Processing Addendum', 'Standard Data Processing Addendum (UK GDPR) for B2B customers buying Hulo Global Vendure plugins.', DPA_BODY),
     ]:
         d = OUT / slug
         d.mkdir(exist_ok=True)

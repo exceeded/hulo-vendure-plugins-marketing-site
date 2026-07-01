@@ -171,10 +171,23 @@ EMAIL_TRACKING_MANUAL = {
 <p>Data captured per email:</p>
 <ul>
 <li>Send: recipient, subject, type, related order / customer / invoice, the SMTP response, the SMTP <code>messageId</code>.</li>
-<li>Opens: per-open history (last 50) with timestamp, IP, user-agent and parsed client (Gmail web, Outlook desktop, Apple Mail iOS …).</li>
-<li>Clicks: per-click history (last 50) with timestamp, target URL, IP, user-agent.</li>
+<li>Opens: raw per-open history — every pixel fire produces a row (never deduplicated) with timestamp, IP, user-agent, parsed client (Gmail web, Outlook desktop, Apple Mail iOS …), and a classification (`human_likely` / `machine_likely` / `unknown`) with reason codes.</li>
+<li>Clicks: raw per-click history with timestamp, IP, user-agent, and — critically — <em>which specific link was clicked</em>: <code>link_type</code>, <code>link_label</code>, <code>link_text</code>, <code>link_index</code>, <code>template_section</code>, destination host + path.</li>
 <li>Bounces / complaints: status update + auto-add to the suppression list.</li>
 </ul>
+
+<div class="callout">
+<strong>What's new in 0.7.0</strong>
+<ul style="margin:8px 0 0 0;">
+<li><strong>Per-link tokenisation.</strong> Every clickable link in every email gets a random 32-byte token. The click endpoint identifies exactly which link was clicked rather than merely "a link was clicked."</li>
+<li><strong>Sensitive-link redaction.</strong> Password-reset, invoice-access and licence-delivery URLs are flagged <code>isSensitive: true</code>; the raw destination never lands in the event log — only the URL hash + host.</li>
+<li><strong>Event classification.</strong> Built-in classifier scores every open + click as human-likely / machine-likely / unknown with reason chips: <code>gmail-proxy</code>, <code>ampp</code> (Apple Mail Privacy Protection), <code>safelinks</code>, <code>outlook-proxy</code>, <code>proofpoint</code>, <code>mimecast</code>, <code>barracuda</code>, <code>datacentre</code>, <code>vpn</code>, <code>bot-ua</code>, <code>headless</code>, <code>scanner-ua</code>. Raw events still recorded — classification is advisory.</li>
+<li><strong>IP enrichment.</strong> Async geo + ASN + VPN / proxy / datacentre flag population via <code>ip-api.com</code> (default, no key) or <code>ipinfo.io</code>. Never blocks event recording.</li>
+<li><strong>Provider webhook receiver.</strong> Ingest delivered / bounced / deferred / dropped / complaint / open / click events from Postmark, SendGrid, Mailgun and Amazon SES (via SNS). Per-provider signature verification; idempotent within 24h.</li>
+<li><strong>Order Activity History panel.</strong> Chronological timeline of every event with classification badges, filters, pagination, CSV export, PDF Evidence Report and elevated-permission full export.</li>
+<li><strong>Graceful degradation.</strong> No runtime import from invoice / support-ticket / order plugins. Hosts without those simply never pass the id; entity foreign-id columns are plain nullable ints.</li>
+</ul>
+</div>
 '''),
         ('install', 'Install', '''
 <p>One package, one line of config, one migration. The fastest way is the bundled installer:</p>

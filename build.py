@@ -52,30 +52,49 @@ PLUGINS = [
         'slug': 'email-tracking',
         'pkg': '@huloglobal/vendure-plugin-email-tracking',
         'class': 'EmailTrackingPlugin',
-        'version': '0.3.0',
+        'version': '0.7.0',
         'title': 'Email Tracking',
-        'tagline': 'See exactly what every transactional email does — opens, clicks, bounces, suppressions.',
+        'tagline': 'Per-link transactional email tracking with human-vs-machine classification, sensitive-link redaction and a per-order activity timeline.',
         'description': (
             'Drop-in tracker for every email your Vendure server sends. Wraps the '
             '`@vendure/email-plugin` pipeline plus a service for ad-hoc sends. '
-            'Logs every send, click and open with full history. Suppression list '
-            'auto-handles hard bounces and complaints. Per-template open rates, '
-            'CSV export, device + client detection on every open.'
+            'Records every send, open and click as a raw event — never deduped — '
+            'so the underlying audit trail is always intact. Each link in each '
+            'email gets its own opaque token so the click handler can identify '
+            '**exactly which link was clicked** (invoice view, order view, '
+            'password reset, footer terms link) rather than merely "a link was '
+            'clicked". Password-reset and invoice-access links are flagged '
+            'sensitive so the raw destination never lands in the event log. '
+            'Every open + click is classified `human_likely` / `machine_likely` '
+            '/ `unknown` with reason codes (Gmail image proxy, Apple Mail Privacy '
+            'Protection, Microsoft Safe Links, Proofpoint, Mimecast, Barracuda, '
+            'datacentre, VPN, bot UA, …) so you can tell a real customer from a '
+            'security scanner.'
         ),
         'features': [
-            ('Open + click pixel-and-redirect tracking', 'Per-event 1×1 pixel for opens, per-link redirector for clicks. Bot UAs are flagged separately.'),
-            ('Full open + click history per email', 'Last 50 opens and clicks per row with timestamp, IP, user-agent and parsed client (Gmail web, Outlook desktop, Apple Mail iOS …).'),
+            ('Per-link tokenisation', 'Every clickable link in every email gets a random 32-byte token; the destination is stored server-side. The click endpoint identifies exactly which link was clicked — link_type, link_label, link_text, link_index, template_section, destination host + path — and records it on the event row.'),
+            ('Sensitive-link redaction', 'Flag password-reset, invoice-access-token and licence-key URLs with `isSensitive: true`. The raw destination is replaced with `[sensitive: <host>]` in the event log; only the URL hash + host are stored. The redirect still works — the raw destination just never lands on an admin-visible row.'),
+            ('Human / machine / unknown classification', 'Every open and click is scored with the SDK\'s built-in classifier. Reason chips surface why an event was flagged machine-likely: `gmail-proxy`, `ampp` (Apple Mail Privacy Protection), `safelinks`, `outlook-proxy`, `proofpoint`, `mimecast`, `barracuda`, `symantec`, `datacentre`, `vpn`, `tor`, `bot-ua`, `headless`, `prefetch`, `scanner-ua`. Raw event count still recorded — the classification is advisory, never the sole basis for a decision.'),
+            ('IP enrichment (ip-api.com or ipinfo)', 'Every event ingested triggers an async geo lookup (country, region, city, ASN, organisation, timezone, proxy / VPN / datacentre / mobile flags). Provider is pluggable via `HULO_IP_ENRICHMENT_PROVIDER`. Skips private / loopback / link-local. Never blocks event recording — enrichment happens fire-and-forget.'),
+            ('Provider webhook receiver', 'Ingest delivered / bounced / deferred / dropped / complaint / open / click events from Postmark, SendGrid, Mailgun and Amazon SES. Each provider\'s signature scheme is verified; unconfigured providers 401; unknown slugs 404. Idempotent within 24h so retries don\'t double-count.'),
+            ('Full open + click history per email', 'Raw events are never deduplicated. Multiple pixel fires from the same recipient create multiple rows; the admin UI groups for display but the underlying audit trail stays intact.'),
             ('Suppression list', 'Hard bounces and complaints auto-add to the suppression table. Subsequent sends are silently skipped and logged as `status=suppressed`.'),
             ('Per-template analytics', 'Open rate, CTR, click-to-open ratio and bounce rate per email type — order-confirmation, OTP, invoice, password-reset and your custom types.'),
-            ('Bounce + complaint webhook', 'POST DSN events to `/email-track/bounce` from your postmaster integration. Both bounce types tracked.'),
+            ('Bounce + complaint webhook', 'POST DSN events to `/email-track/bounce` from your postmaster integration for legacy setups.'),
             ('Admin UI: Email Log + per-customer Emails tab', 'Filter by recipient, customer, order, status, type, date range. Expand any row for the full event timeline.'),
-            ('CSV export', '`/email-track/log/export.csv` returns up to 50k rows with the same filter shape as the list view.'),
+            ('Order Activity History panel', 'On every order-detail page: chronological timeline of every transactional email event with classification badges, filters (opens only / clicks only / payment / admin notes), IP-derived location with cautionary banner, CSV export, PDF Evidence Report via short-lived signed URLs, and elevated-permission full-export for legal evidence preservation. Pagination for high-volume customers — 100 events per page with a "Load more" button.'),
+            ('CSV + JSON + PDF export', 'CSV (redacted) for daily browsing, JSON via GraphQL for machine processing, PDF Evidence Report ("Order Activity and Delivery Evidence Report") for legal preservation. Sensitive fields respect the redaction rules; full export requires elevated permission.'),
             ('Works with any SMTP transport', 'Gmail, SES, SendGrid, Postmark, Mailgun, raw SMTP. Just plug `TrackingEmailSender()` into your email-plugin config.'),
+            ('Graceful degradation', 'No runtime import from invoice / support-ticket / order plugins. Hosts that don\'t have those simply never pass the id; entity foreign-id columns are plain nullable ints. If a table isn\'t there yet, persistence fails silently and the redirect still works via signature verification.'),
         ],
         'endpoints': [
             ('GET',  '/email-track/open/:id.gif',     'Pixel — logs an open then serves a 1×1 GIF'),
-            ('GET',  '/email-track/click/:id?u=<url>', 'Click redirector — logs then 302s to the original URL'),
+            ('GET',  '/email-track/click/:id?u=<url>&s=<sig>', 'Click redirector — verifies HMAC signature, logs event with per-link metadata + classification, then 302s'),
             ('POST', '/email-track/bounce',           'Bounce / complaint webhook — DSN bridge'),
+            ('POST', '/email-events/webhook/postmark',  'Postmark event webhook (Basic Auth verified)'),
+            ('POST', '/email-events/webhook/sendgrid',  'SendGrid event webhook (ECDSA signature verified)'),
+            ('POST', '/email-events/webhook/mailgun',   'Mailgun event webhook (HMAC-SHA256 verified)'),
+            ('POST', '/email-events/webhook/ses',       'Amazon SES via SNS (topic ARN allowlist)'),
             ('GET',  '/email-track/log',              'Admin: paginated log with filters'),
             ('GET',  '/email-track/log/summary',      'Admin: status totals tile'),
             ('GET',  '/email-track/log/:id',          'Admin: full detail (incl. opens + clicks arrays)'),
@@ -506,10 +525,10 @@ TICK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="
 def index_page():
     short_features = {
         'email-tracking': [
-            'Open + click tracking with full history',
-            'Suppression list (auto + manual)',
-            'Per-template open / click rates',
-            'CSV export',
+            'Per-link tokenised open + click tracking',
+            'Human / machine event classification (Gmail proxy, Safe Links, …)',
+            'IP enrichment + provider webhooks (Postmark / SendGrid / Mailgun / SES)',
+            'Order Activity History panel + PDF Evidence Report',
         ],
         'geo-block': [
             '37 region presets (EU, EEA, GCC, NATO, …)',
