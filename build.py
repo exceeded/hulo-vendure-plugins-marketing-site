@@ -52,7 +52,7 @@ PLUGINS = [
         'slug': 'email-tracking',
         'pkg': '@huloglobal/vendure-plugin-email-tracking',
         'class': 'EmailTrackingPlugin',
-        'version': '0.7.0',
+        'version': '0.8.2',
         'title': 'Email Tracking',
         'tagline': 'Per-link transactional email tracking with human-vs-machine classification, sensitive-link redaction and a per-order activity timeline.',
         'description': (
@@ -109,7 +109,7 @@ PLUGINS = [
         'slug': 'geo-block',
         'pkg': '@huloglobal/vendure-plugin-geo-block',
         'class': 'GeoBlockPlugin',
-        'version': '0.2.0',
+        'version': '0.6.0',
         'title': 'Geo Block',
         'tagline': '37 region presets, soft-block mode, IP allowlist, audit log, "what-if" simulator.',
         'description': (
@@ -147,7 +147,7 @@ PLUGINS = [
         'slug': 'visitor-analytics',
         'pkg': '@huloglobal/vendure-plugin-visitor-analytics',
         'class': 'VisitorAnalyticsPlugin',
-        'version': '0.3.0',
+        'version': '0.7.0',
         'title': 'Visitor Analytics',
         'tagline': 'Self-hosted, privacy-respecting visitor journey + conversion goals — no third party.',
         'description': (
@@ -482,7 +482,57 @@ CURRENCY_JS = '''
 </script>
 '''
 
-FOOTER = CURRENCY_JS + '''
+VERSION_REFRESH_JS = '''
+<script>
+/*
+ * Keep every [data-hulo-pkg] version chip in sync with what npm currently
+ * publishes. The HTML is built with the last-known-good version baked in
+ * (so JS-off users still see the right thing and search engines index a
+ * concrete number). This runs on load and rewrites the chip if npm has
+ * shipped a newer version since the last build.
+ *
+ * Strategy:
+ *   1. Fetch /vendure-plugins/versions.json (regenerated on every build,
+ *      served from our own CDN — no cross-origin, no rate-limit).
+ *   2. If that fails (older build without the file), fall back to the
+ *      public npm registry directly. CORS on the registry is permissive.
+ *   3. Never throw. A stale chip is fine; a broken page is not.
+ */
+(function () {
+  var chips = document.querySelectorAll('[data-hulo-pkg]');
+  if (!chips.length) return;
+  var wanted = {};
+  chips.forEach(function (el) { wanted[el.getAttribute('data-hulo-pkg')] = true; });
+  function apply(versions) {
+    chips.forEach(function (el) {
+      var pkg = el.getAttribute('data-hulo-pkg');
+      var v = versions[pkg];
+      if (!v) return;
+      var prefix = el.getAttribute('data-hulo-version-prefix') || '';
+      var next = prefix + v;
+      if (el.textContent !== next) el.textContent = next;
+    });
+  }
+  fetch('/vendure-plugins/versions.json', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(apply)
+    .catch(function () {
+      // Fall back to the public registry — one request per package.
+      Object.keys(wanted).forEach(function (pkg) {
+        var url = 'https://registry.npmjs.org/' + encodeURIComponent(pkg).replace('%40', '@') + '/latest';
+        fetch(url, { cache: 'no-cache' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) {
+            if (j && j.version) { var o = {}; o[pkg] = j.version; apply(o); }
+          })
+          .catch(function () { /* silent */ });
+      });
+    });
+})();
+</script>
+'''
+
+FOOTER = CURRENCY_JS + VERSION_REFRESH_JS + '''
 </main>
 <footer class="border-t border-ink-100 bg-ink-50 mt-20">
 <div class="container-page py-10 grid gap-8 sm:grid-cols-3">
@@ -556,7 +606,7 @@ def index_page():
   <ul>{feats_html}</ul>
   <div class="vp-card-actions">
     <a href="/vendure-plugins/{p['slug']}/" class="btn btn-primary text-sm" style="padding:.6rem 1.2rem">Learn more →</a>
-    <span class="text-xs text-ink-500 font-mono ml-auto">v{p['version']}</span>
+    <span class="text-xs text-ink-500 font-mono ml-auto" data-hulo-pkg="{html.escape(p['pkg'])}" data-hulo-version-prefix="v">v{p['version']}</span>
   </div>
 </article>''')
 
@@ -712,7 +762,7 @@ export const config: VendureConfig = {{
         ('Where is data stored?',
          'In your Vendure database. The plugin adds its own tables via a migration — your data never leaves your server.'),
         ('Will it survive a Vendure upgrade?',
-         f'It targets Vendure 3.x (compatibility set to <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">^3.0.0</code>). Major version bumps will be tested against new Vendure releases.'),
+         f'Tested against Vendure <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">&gt;=3.5.0 &lt;4.0.0</code> — 3.5, 3.6 and 3.7 are all covered by CI. A boot-time compatibility check emits a non-fatal warning if <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">@vendure/core</code> is outside that range, so upgrades to a future 3.x are safe to try. The 4.0 line will be tested and re-declared once its changelog lands.'),
     ]
     faq_html = '\n'.join(f'<details><summary>{html.escape(q)}</summary><p>{a}</p></details>' for q, a in faqs)
 
@@ -730,7 +780,7 @@ export const config: VendureConfig = {{
 <a href="{BUY_BASE}/{pkg_short}" class="btn btn-primary">Buy a licence →</a>
 <a href="#install" class="btn btn-secondary">Install</a>
 <a href="/vendure-plugins/{short_id}/docs/" class="btn btn-secondary">Read the manual</a>
-<span class="text-xs text-ink-500 font-mono ml-auto">{html.escape(p['pkg'])}@{p['version']}</span>
+<span class="text-xs text-ink-500 font-mono ml-auto" data-hulo-pkg="{html.escape(p['pkg'])}" data-hulo-version-prefix="{html.escape(p['pkg'])}@">{html.escape(p['pkg'])}@{p['version']}</span>
 </div>
 </div>
 </section>
@@ -917,6 +967,14 @@ def main():
 
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / 'index.html').write_text(index_page(), encoding='utf-8')
+    # Emit a flat versions map the client-side updater fetches on load —
+    # so version chips always show the current npm version even if the
+    # HTML itself was baked hours ago.
+    versions_map = {p['pkg']: p['version'] for p in PLUGINS}
+    versions_map['_generated_at_utc'] = subprocess.check_output(
+        ['date', '-u', '+%Y-%m-%dT%H:%M:%SZ']).decode().strip()
+    (OUT / 'versions.json').write_text(
+        json.dumps(versions_map, indent=2) + '\n', encoding='utf-8')
     for p in PLUGINS:
         d = OUT / p['slug']
         d.mkdir(exist_ok=True)
@@ -924,7 +982,7 @@ def main():
         sh = d / 'install.sh'
         sh.write_text(install_sh(p), encoding='utf-8')
         sh.chmod(0o755)
-    print(f'Wrote {len(PLUGINS) + 1} pages + {len(PLUGINS)} install scripts to {OUT}')
+    print(f'Wrote {len(PLUGINS) + 1} pages + {len(PLUGINS)} install scripts + versions.json to {OUT}')
 
 
 if __name__ == '__main__':
