@@ -484,6 +484,14 @@ VISITOR_ANALYTICS_MANUAL = {
         ('overview', 'Overview', '''
 <p><strong>Visitor Analytics</strong> is a self-hosted, privacy-aware visitor journey tracker. Page views, time-on-page, exit pages, configurable funnel, conversion goals, UTM attribution, bot detection. All data lives in your own database; nothing is sent to a third party.</p>
 <p>Survives login — a visitor's pre-signin events and post-signin events share the same <code>visitorId</code>, so funnel analysis works across the auth boundary.</p>
+<p><strong>Since 0.8.0 the plugin also ships:</strong></p>
+<ul>
+<li><strong>Cart abandonment</strong> — detection, signed recovery links, Slack notification for high-value drops, admin dashboard.</li>
+<li><strong>Product recommendations</strong> — <code>also-viewed</code>, <code>personal</code>, and <code>trending</code> endpoints driven by observed co-viewing behaviour.</li>
+<li><strong>Site search analytics</strong> — top queries, zero-result queries (direct catalogue-gap intel), search-to-cart conversion.</li>
+<li><strong>Journey drawer buffs</strong> — rage-click + dead-click hot-spot lists, per-session heuristic <code>intent</code> label.</li>
+<li><strong>Drop-in storefront helper</strong> — one script tag from <code>/ees/hulo.js</code> and every event helper is on <code>window.hulo</code>.</li>
+</ul>
 '''),
         ('install', 'Install', '''
 <div class="doc-code">curl -sSL https://huloglobal.com/vendure-plugins/visitor-analytics/install.sh | bash</div>
@@ -513,37 +521,154 @@ yarn migration:generate AddVisitorAnalyticsTables
 yarn migration:run</div>
 '''),
         ('storefront', 'Storefront integration', '''
-<p>The plugin ships an ingest endpoint at <code>POST /ees/track</code>. Your storefront calls it with batches of events.</p>
-<p>Drop a small client into your storefront to record pageviews automatically:</p>
-<div class="doc-code"><span class="c">// utils/visitor-tracking.ts</span>
-<span class="k">const</span> ENDPOINT = <span class="s">'https://shop.example.com/ees/track'</span>;
-<span class="k">const</span> CHANNEL_ID = 1;
-<span class="k">let</span> queue: any[] = [];
-<span class="k">let</span> flushTimer: any;
-
-<span class="k">export function</span> recordPageview(url: string, title: string) {{
-  queue.push({{ type: <span class="s">'pageview'</span>, url, title, clientTs: Date.now() }});
-  scheduleFlush();
+<h3>Option 1: drop-in helper (recommended)</h3>
+<p>The plugin serves a typed, batching event helper at <code>/ees/hulo.js</code>. One script tag, every event is on <code>window.hulo</code>:</p>
+<div class="doc-code">&lt;script src="https://shop.example.com/ees/hulo.js" defer&gt;&lt;/script&gt;</div>
+<p>The helper handles:</p>
+<ul>
+<li>Batching events (1.5s coalescing window) and flushing via <code>sendBeacon</code> on <code>pagehide</code> / <code>beforeunload</code>.</li>
+<li>Emitting a <code>pageview</code> on load automatically.</li>
+<li>Auto rage-click detection (≥3 pointerdowns within 500ms and 20px radius fires <code>rage_click</code>).</li>
+<li>Auto dead-click detection (click on non-interactive element with no URL / significant scroll change within 400ms fires <code>dead_click</code>).</li>
+</ul>
+<h3>Option 2: typed helpers in your storefront</h3>
+<p>Recommended for SSR frameworks (Qwik, Next, Remix, SolidStart) so the tracker code ships in your own bundle. Copy this into <code>utils/visitor-tracking.ts</code>:</p>
+<div class="doc-code"><span class="k">export function</span> recordProductView(productId: number, variantId?: number) {{
+  send([{{ type: <span class="s">'event'</span>, url: location.href, meta: {{
+    eventType: <span class="s">'product_view'</span>, productId, productVariantId: variantId,
+  }} }}]);
 }}
 
-<span class="k">export function</span> recordEvent(type: string, meta: any) {{
-  queue.push({{ type, url: location.pathname + location.search, meta, clientTs: Date.now() }});
-  scheduleFlush();
+<span class="k">export function</span> recordCartSnapshot(cart: {{ currency, totalMinor, items, email? }}) {{
+  send([{{ type: <span class="s">'event'</span>, url: location.href, meta: {{
+    eventType: <span class="s">'cart_snapshot'</span>, ...cart,
+  }} }}]);
 }}
 
-<span class="k">function</span> scheduleFlush() {{
-  clearTimeout(flushTimer);
-  flushTimer = setTimeout(flush, 1000);
+<span class="k">export function</span> recordSearch(query: string, resultsCount: number) {{
+  send([{{ type: <span class="s">'event'</span>, url: location.href, meta: {{
+    eventType: <span class="s">'search'</span>, query, resultsCount,
+  }} }}]);
 }}
-<span class="k">function</span> flush() {{
-  <span class="k">if</span> (!queue.length) <span class="k">return</span>;
-  <span class="k">const</span> body = JSON.stringify({{ channelId: CHANNEL_ID, events: queue }});
-  queue = [];
-  <span class="c">// sendBeacon survives navigation</span>
-  navigator.sendBeacon?.(ENDPOINT, body) ||
-    fetch(ENDPOINT, {{ method: <span class="s">'POST'</span>, body, headers: {{ <span class="s">'content-type'</span>: <span class="s">'application/json'</span> }}, keepalive: <span class="k">true</span> }});
+
+<span class="k">export function</span> recordCheckoutCompleted(orderCode: string, totalMinor: number) {{
+  send([{{ type: <span class="s">'event'</span>, url: location.href, meta: {{
+    eventType: <span class="s">'checkout_completed'</span>, orderCode, totalMinor,
+  }} }}], <span class="c">/* useBeacon */</span> <span class="k">true</span>);
 }}</div>
-<p>Then call <code>recordPageview()</code> on every route change. For custom events (add-to-cart, search, signup, etc.) call <code>recordEvent(type, meta)</code> at the appropriate point.</p>
+<p>See the <a href="https://github.com/exceeded/vendure-plugin-visitor-analytics">plugin README</a> for the full implementation including the send() batcher and the auto rage/dead-click detectors.</p>
+<h3>Where to call the helpers</h3>
+<table>
+<thead><tr><th>Helper</th><th>Where to call</th><th>Feeds</th></tr></thead>
+<tbody>
+<tr><td><code>productView(id)</code></td><td>Product detail page mount + on variant change</td><td>co-view aggregation, trending, personal recs</td></tr>
+<tr><td><code>cartSnapshot(cart)</code></td><td>Every cart change (add / remove / qty)</td><td>abandoned-cart detection</td></tr>
+<tr><td><code>search(q, n)</code></td><td>Once search results have rendered</td><td>top / no-result / conversion</td></tr>
+<tr><td><code>checkoutCompleted(code, total)</code></td><td>Order confirmation page</td><td>closes any open abandoned-cart row</td></tr>
+</tbody>
+</table>
+'''),
+        ('cart-recovery', 'Cart-restore route', '''
+<p>The abandoned-cart admin dashboard mints a URL of the form <code>https://shop.example.com/cart/restore?t=&lt;token&gt;</code>. Add a route on your storefront that consumes it:</p>
+<ol>
+<li>Read <code>?t=</code> from the URL.</li>
+<li>Call <code>GET /ees/recover-cart?t=&lt;token&gt;</code> — returns <code>{{ ok: true, items: [...] }}</code> or <code>{{ error }}</code>.</li>
+<li>If the visitor already has items in their live cart, don't overwrite — show a friendly "you already have items in your cart" message.</li>
+<li>Otherwise, re-add each <code>{{ variantId, qty }}</code> via your Vendure order API (typically <code>addItemToOrder(productVariantId, quantity)</code>).</li>
+<li>Navigate to <code>/cart</code>.</li>
+</ol>
+<p>The token is signed, time-bounded (default 72h), and non-reusable. If it's expired or already consumed, the endpoint returns <code>{{ error: 'expired-or-invalid' }}</code>.</p>
+'''),
+        ('cart-abandonment', 'Cart abandonment', '''
+<p>Detects sessions that put items in the cart but never checked out. Turns them into <code>AbandonedCart</code> rows you can send a recovery email against.</p>
+<h3>Enable it</h3>
+<div class="doc-code"><span class="k">VisitorAnalyticsPlugin</span>.init({{
+  <span class="c">// ...</span>
+  abandonment: {{
+    windowMinutes: 30,           <span class="c">// how long since last cart_snapshot before we mark as abandoned</span>
+    slackMinValueMinor: 5000,    <span class="c">// £50 / $50 threshold for a Slack ping</span>
+    slackWebhookUrl: process.env.<span class="k">HULO_ABANDONMENT_SLACK_URL</span>,
+    recoveryLinkSecret: process.env.<span class="k">HULO_ABANDONMENT_SECRET</span>,
+    recoveryLinkTtlHours: 72,
+    storefrontBaseUrl: <span class="s">'https://shop.example.com'</span>,
+  }},
+}})</div>
+<h3>How the scanner works</h3>
+<p>A worker-only interval (5 minutes) walks recent <code>cart_snapshot</code> events, grouped by session. For each session:</p>
+<ul>
+<li>If <code>checkout_completed</code> landed later — no-op (or promote an existing abandoned row to <code>converted</code>).</li>
+<li>If the last <code>cart_snapshot</code> is older than <code>windowMinutes</code> and no fresh snapshot — open an <code>abandoned_cart</code> row (unique on <code>sessionId</code> — can't double-open).</li>
+<li>If the value clears <code>slackMinValueMinor</code>, POST a one-off notification to Slack (idempotent — <code>notificationSent</code> flag).</li>
+</ul>
+<h3>Admin dashboard</h3>
+<p>Under <strong>Analytics → Abandoned carts</strong>. Filters by status / min value / email / window; KPIs (open, recovered, converted, lost value); actions per row: mint recovery link (copies URL to clipboard), mark recovered / dismissed manually. CSV export.</p>
+<h3>Recovery link lifecycle</h3>
+<ol>
+<li>Admin clicks "Recovery link" on an abandoned row.</li>
+<li>Backend mints a random opaque token and returns <code>{{ url: '&lt;storefront&gt;/cart/restore?t=...' }}</code>.</li>
+<li>Admin drops the URL into a recovery email.</li>
+<li>Recipient clicks — the storefront's <code>/cart/restore</code> route exchanges the token via <code>/ees/recover-cart?t=...</code> and re-adds the items.</li>
+<li>Once the visitor completes the checkout, the scanner promotes the row to <code>converted</code>.</li>
+</ol>
+'''),
+        ('recommendations', 'Product recommendations', '''
+<p>Recommendations derived from observed co-viewing behaviour. The scanner walks recent <code>product_view</code> events per session, extracts every ordered pair, and increments a counter per <code>(productIdA, productIdB, channelId)</code> triple.</p>
+<h3>Endpoints</h3>
+<table>
+<thead><tr><th>Endpoint</th><th>Use</th></tr></thead>
+<tbody>
+<tr><td><code>GET /ees/recommendations/also-viewed?productId=42&amp;limit=10</code></td><td>"Customers who viewed X also viewed…" rail on the product page.</td></tr>
+<tr><td><code>GET /ees/recommendations/personal?visitorId=abc&amp;limit=10</code></td><td>Personalised recs based on the visitor's last 10 product views over 30 days. Excludes seeds so the same product never appears on the rail.</td></tr>
+<tr><td><code>GET /ees/recommendations/trending?hours=24&amp;limit=10</code></td><td>Most-viewed products in the window. Reflects real intent (not search-console clicks).</td></tr>
+<tr><td><code>GET /ees/recommendations/aggregate-now</code></td><td>Force a fresh sweep (SuperAdmin only). Useful after a big data backfill.</td></tr>
+</tbody>
+</table>
+<h3>Storefront wiring</h3>
+<div class="doc-code"><span class="c">// on the product detail page</span>
+hulo.productView(product.id, selectedVariant.id);
+
+<span class="c">// then fetch the recs rail</span>
+<span class="k">const</span> res = <span class="k">await</span> fetch(<span class="s">`/ees/recommendations/also-viewed?productId=${{product.id}}&amp;limit=8`</span>);
+<span class="k">const</span> {{ items }} = <span class="k">await</span> res.json();
+<span class="c">// items: [{{ productId, score }}]</span>
+<span class="c">// Hydrate names / images from your usual Vendure product fetch.</span></div>
+'''),
+        ('search-analytics', 'Site search analytics', '''
+<p>Reads back over the <code>visitor_event</code> table where the storefront has fired <code>search</code> custom events. Zero new schema.</p>
+<h3>Storefront wiring</h3>
+<div class="doc-code"><span class="c">// once results have rendered</span>
+hulo.search(query, results.totalItems);</div>
+<h3>Endpoints</h3>
+<table>
+<thead><tr><th>Endpoint</th><th>Use</th></tr></thead>
+<tbody>
+<tr><td><code>GET /ees/search-analytics/top?days=7</code></td><td>Top queries by volume with average results count.</td></tr>
+<tr><td><code>GET /ees/search-analytics/no-results?days=7</code></td><td>Queries that returned zero hits. Direct catalogue-gap intel.</td></tr>
+<tr><td><code>GET /ees/search-analytics/conversion?days=7</code></td><td>Of sessions that searched, what fraction went on to <code>add_to_cart</code>.</td></tr>
+</tbody>
+</table>
+'''),
+        ('journey-buffs', 'Journey drawer buffs', '''
+<h3>Rage-click + dead-click hot spots</h3>
+<p>The auto-detectors bundled with <code>hulo.js</code> fire <code>rage_click</code> / <code>dead_click</code> events with the offending element's CSS selector. Two admin endpoints aggregate them per URL:</p>
+<ul>
+<li><code>GET /ees/journey/rage-clicks?days=7</code> — pages where visitors are frustrated.</li>
+<li><code>GET /ees/journey/dead-clicks?days=7</code> — elements that <em>look</em> clickable but aren't.</li>
+</ul>
+<p>Both are conservative heuristics — the signal is direction-of-frustration, not a metric to optimise against.</p>
+<h3>Per-session intent labels</h3>
+<p><code>GET /ees/journey/session-summary?visitorId=abc</code> returns one row per session with a heuristic <code>intent</code> label:</p>
+<table>
+<thead><tr><th>Label</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>purchase</code></td><td>Fired <code>checkout_completed</code>. Best outcome.</td></tr>
+<tr><td><code>abandon</code></td><td>Added to cart or fired a cart snapshot but did not check out.</td></tr>
+<tr><td><code>frustrate</code></td><td>Fired <code>rage_click</code>. Time to look at the URL.</td></tr>
+<tr><td><code>consider</code></td><td>Viewed ≥5 pages but didn't add to cart.</td></tr>
+<tr><td><code>browse</code></td><td>Genuine browsing that didn't hit any of the above.</td></tr>
+<tr><td><code>bounce</code></td><td>Single pageview, gone in &lt;15s.</td></tr>
+</tbody>
+</table>
 '''),
         ('goals', 'Conversion goals', '''
 <p>A conversion goal is a URL glob that, when matched by a pageview, counts that visitor as having completed the goal. Patterns support:</p>
@@ -615,25 +740,45 @@ yarn migration:run</div>
 </ul>
 '''),
         ('endpoints', 'HTTP endpoints', '''
+<h3>Public (browser-safe, CORS-permissive)</h3>
 <table>
 <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
 <tbody>
-<tr><td>POST</td><td><code>/ees/track</code></td><td>Public: ingest batch of events</td></tr>
-<tr><td>GET</td><td><code>/ees/visitors/summary</code></td><td>Admin: top-line + daily series</td></tr>
-<tr><td>GET</td><td><code>/ees/visitors/sources</code></td><td>Admin: top sources</td></tr>
-<tr><td>GET</td><td><code>/ees/visitors/top-pages</code></td><td>Admin: most-visited URLs</td></tr>
-<tr><td>GET</td><td><code>/ees/visitors/funnel</code></td><td>Admin: configurable funnel</td></tr>
-<tr><td>GET</td><td><code>/ees/visitors/exit-pages</code></td><td>Admin: top exit pages</td></tr>
-<tr><td>GET</td><td><code>/ees/visitors/top-events</code></td><td>Admin: top custom events</td></tr>
-<tr><td>GET</td><td><code>/ees/visitors/live</code></td><td>Admin: SSE live-now stream</td></tr>
-<tr><td>GET</td><td><code>/ees/visitors/journey/:visitorId</code></td><td>Admin: per-visitor timeline</td></tr>
-<tr><td>GET</td><td><code>/ees/visitors/recent</code></td><td>Admin: recent events</td></tr>
-<tr><td>GET</td><td><code>/ees/visitors/export.csv</code></td><td>Admin: CSV export (max 90 days)</td></tr>
-<tr><td>GET</td><td><code>/ees/goals</code></td><td>Admin: list conversion goals</td></tr>
-<tr><td>POST</td><td><code>/ees/goals</code></td><td>Admin: create a goal</td></tr>
-<tr><td>PUT</td><td><code>/ees/goals/:id</code></td><td>Admin: update a goal</td></tr>
-<tr><td>DELETE</td><td><code>/ees/goals/:id</code></td><td>Admin: delete a goal</td></tr>
-<tr><td>GET</td><td><code>/ees/goals/stats</code></td><td>Admin: per-goal completion stats</td></tr>
+<tr><td>POST</td><td><code>/ees/track</code></td><td>Ingest a batch of visitor events</td></tr>
+<tr><td>GET</td><td><code>/ees/hulo.js</code></td><td>Typed storefront helper JS (0.8.1)</td></tr>
+<tr><td>GET</td><td><code>/ees/recover-cart?t=&lt;token&gt;</code></td><td>Resolve a recovery-link token → cart items</td></tr>
+<tr><td>GET</td><td><code>/ees/recommendations/also-viewed?productId=…</code></td><td>Co-view recommendations for one product</td></tr>
+<tr><td>GET</td><td><code>/ees/recommendations/personal?visitorId=…</code></td><td>Personalised recs from visitor history</td></tr>
+<tr><td>GET</td><td><code>/ees/recommendations/trending?hours=…</code></td><td>Most-viewed products in window</td></tr>
+</tbody>
+</table>
+<h3>Admin (requires a Vendure admin session; <code>ReadCustomer</code> unless noted)</h3>
+<table>
+<thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td>GET</td><td><code>/ees/visitors/summary</code></td><td>Top-line + daily series</td></tr>
+<tr><td>GET</td><td><code>/ees/visitors/sources</code></td><td>Top sources by visits / sessions</td></tr>
+<tr><td>GET</td><td><code>/ees/visitors/top-pages</code></td><td>Most-visited URLs</td></tr>
+<tr><td>GET</td><td><code>/ees/visitors/funnel</code></td><td>Configurable funnel with drop-offs</td></tr>
+<tr><td>GET</td><td><code>/ees/visitors/exit-pages</code></td><td>Top exit pages</td></tr>
+<tr><td>GET</td><td><code>/ees/visitors/live</code></td><td>SSE live-now stream</td></tr>
+<tr><td>GET</td><td><code>/ees/visitors/journey/:visitorId</code></td><td>Per-visitor timeline</td></tr>
+<tr><td>GET</td><td><code>/ees/visitors/export.csv</code></td><td>CSV export (max 90 days)</td></tr>
+<tr><td>POST</td><td><code>/ees/goals</code></td><td>Create a conversion goal</td></tr>
+<tr><td>GET</td><td><code>/ees/goals/stats</code></td><td>Per-goal completion stats</td></tr>
+<tr><td>GET</td><td><code>/ees/abandoned-carts</code></td><td><strong>0.8.0</strong> — paginated list with filters</td></tr>
+<tr><td>GET</td><td><code>/ees/abandoned-carts/summary</code></td><td><strong>0.8.0</strong> — KPIs + recovery rate</td></tr>
+<tr><td>GET</td><td><code>/ees/abandoned-carts/:id</code></td><td><strong>0.8.0</strong> — detail incl. parsed items</td></tr>
+<tr><td>POST</td><td><code>/ees/abandoned-carts/:id/recovery-link</code></td><td><strong>0.8.0</strong> — mint signed recovery URL (<code>UpdateCustomer</code>)</td></tr>
+<tr><td>POST</td><td><code>/ees/abandoned-carts/:id/status</code></td><td><strong>0.8.0</strong> — mark recovered / dismissed (<code>UpdateCustomer</code>)</td></tr>
+<tr><td>GET</td><td><code>/ees/abandoned-carts/export.csv</code></td><td><strong>0.8.0</strong> — CSV export</td></tr>
+<tr><td>GET</td><td><code>/ees/recommendations/aggregate-now</code></td><td><strong>0.8.0</strong> — force co-view sweep (<code>SuperAdmin</code>)</td></tr>
+<tr><td>GET</td><td><code>/ees/search-analytics/top</code></td><td><strong>0.8.0</strong> — top search queries</td></tr>
+<tr><td>GET</td><td><code>/ees/search-analytics/no-results</code></td><td><strong>0.8.0</strong> — zero-result queries</td></tr>
+<tr><td>GET</td><td><code>/ees/search-analytics/conversion</code></td><td><strong>0.8.0</strong> — search→cart rate</td></tr>
+<tr><td>GET</td><td><code>/ees/journey/rage-clicks</code></td><td><strong>0.8.0</strong> — rage-click hot spots</td></tr>
+<tr><td>GET</td><td><code>/ees/journey/dead-clicks</code></td><td><strong>0.8.0</strong> — dead-click hot spots</td></tr>
+<tr><td>GET</td><td><code>/ees/journey/session-summary?visitorId=…</code></td><td><strong>0.8.0</strong> — per-session intent labels</td></tr>
 </tbody>
 </table>
 '''),

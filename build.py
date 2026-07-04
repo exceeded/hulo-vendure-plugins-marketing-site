@@ -147,45 +147,62 @@ PLUGINS = [
         'slug': 'visitor-analytics',
         'pkg': '@huloglobal/vendure-plugin-visitor-analytics',
         'class': 'VisitorAnalyticsPlugin',
-        'version': '0.7.0',
+        'version': '0.8.1',
         'title': 'Visitor Analytics',
-        'tagline': 'Self-hosted, privacy-respecting visitor journey + conversion goals — no third party.',
+        'tagline': 'Self-hosted visitor journey, cart abandonment, product recommendations, search analytics — one plugin, one database, no third party.',
         'description': (
-            'Self-hosted visitor analytics. Page views, time-on-page, exit pages, '
-            'a configurable funnel, conversion goals, UTM attribution, bot '
-            'detection. Per-visitor profile drawer with parsed UA + MaxMind '
-            'GeoLite2 geo. Survives login — guest and signed-in events share '
-            'the same visitor id. Privacy-first defaults: DNT respected, IPs '
-            'anonymised, optional consent gate.'
+            'Self-hosted analytics that reaches all the way from a visitor\'s '
+            'first pageview to a recovered abandoned cart. Journey drawer with '
+            'parsed UA + MaxMind geo + heuristic intent labels; cart abandonment '
+            'detection with signed recovery links and Slack notifications; '
+            'co-view product recommendations (also-viewed, personal, trending); '
+            'site-search analytics (top queries, zero-result gaps, search-to-cart '
+            'conversion); rage-click and dead-click hot-spot lists. Privacy-first '
+            'defaults: DNT respected, IPs anonymised, optional consent gate. '
+            'Ships a drop-in storefront JS helper at `/ees/hulo.js` — one script '
+            'tag and every event type is wired.'
         ),
         'features': [
-            ('Lightweight ingest endpoint', '`POST /ees/track` accepts a batch of pageviews / unloads / custom events. Cookies (`ees_vid`, `ees_sid`) issued + refreshed automatically.'),
-            ('Configurable conversion goals', 'CRUD a goal with a URL glob (`/checkout/thank-you/*`) and a value (£/$). Live matcher tags every pageview that hits the pattern. Dashboard shows completions per goal.'),
-            ('Bot detection', 'UA-classified `isBot` flag on every event. Excluded from "real human" counts but visible on the dashboard so you can see crawler share.'),
-            ('Privacy-first defaults', 'DNT respected, IPs anonymised to /24 (IPv4) / /48 (IPv6), optional `requireConsent` gate. All three opt-outable.'),
-            ('UTM attribution', 'Source / medium / campaign / term / content captured server-side per pageview. Plus referrer domain so reports group by source without UTM.'),
-            ('Funnel + exit-page reports', 'Configurable funnel with per-step drop-off, exit-page report, top events, top pages.'),
-            ('Per-visitor journey drawer', 'Click any visitor for the full timeline: pages, custom events, time on page, country, browser, OS.'),
+            ('Cart abandonment', 'Detects sessions with `cart_snapshot` events but no `checkout_completed` in the abandonment window (default 30 min). Auto-promotes to `converted` when a matching checkout later lands. Signed recovery-link tokens (time-bounded, non-reusable) — `/ees/abandoned-carts/:id/recovery-link` returns a URL you drop into a recovery email. Slack notification for high-value drops.'),
+            ('Product recommendations', 'Denormalised `ProductCoView` table rebuilt every 6 hours from `product_view` events, bounded per session to 20 events so bot sessions can\'t skew the table. Three endpoints: `also-viewed` for a product-page rail, `personal` for a homepage/cart rail based on a returning visitor\'s last 10 product views, `trending` for a most-viewed-in-window rail.'),
+            ('Site search analytics', 'Zero-schema-cost queries over `search` events. Top queries by volume with average results count, zero-result queries (direct catalogue-gap intel), search-to-cart conversion rate.'),
+            ('Journey drawer buffs', 'Rage-click + dead-click hot-spot lists per URL. Per-session heuristic `intent` label (`purchase` / `abandon` / `frustrate` / `consider` / `browse` / `bounce`) — one glance per session in the visitor drawer.'),
+            ('Drop-in storefront helper', 'Ships `/ees/hulo.js` — one script tag and every event helper (`cartSnapshot`, `productView`, `search`, `checkoutCompleted`) is on `window.hulo`. Handles batching, `sendBeacon`, auto rage-click + dead-click detection.'),
+            ('Configurable conversion goals', 'CRUD a goal with a URL glob (`/checkout/thank-you/*`) and a value. Live matcher tags every pageview that hits the pattern. Dashboard shows completions per goal.'),
+            ('Full visitor journey', 'Page views, time-on-page, exit pages, configurable funnel, UTM attribution, bot detection. Per-visitor profile drawer with parsed UA + MaxMind GeoLite2 geo. Survives login — guest and signed-in events share the same visitor id.'),
+            ('Privacy-first defaults', 'DNT respected, IPs anonymised to /24 (IPv4) / /48 (IPv6), optional `requireConsent` gate. All three opt-outable per install.'),
             ('Live-now SSE widget', 'Real-time tile on the admin dashboard showing visitors active right now (by country).'),
-            ('Custom event helpers', '`recordEvent("add_to_cart", { productVariantId, quantity })` on the storefront — fires fire-and-forget, batched, with the same enrichment.'),
-            ('CSV export', '`/ees/visitors/export.csv?days=N` returns the last N days (max 90) of raw events with full enrichment.'),
+            ('CSV export', '`/ees/visitors/export.csv?days=N` and `/ees/abandoned-carts/export.csv` for raw event / abandoned-cart data.'),
+            ('Admin dashboards', 'Angular admin pages for Abandoned Carts (KPIs, filters, recovery-link mint, CSV export) and Analytics Insights (trending, also-viewed lookup, search analytics, rage/dead-click hot spots).'),
         ],
         'endpoints': [
             ('POST', '/ees/track',                 'Public: ingest a batch of events'),
+            ('GET',  '/ees/hulo.js',               'Public: drop-in storefront helper JS (0.8.1)'),
+            ('GET',  '/ees/recover-cart?t=…',      'Public: resolve a recovery-link token → cart items'),
+            ('GET',  '/ees/recommendations/also-viewed?productId=…', 'Public: co-view recommendations for one product'),
+            ('GET',  '/ees/recommendations/personal?visitorId=…',    'Public: personalised recs from visitor history'),
+            ('GET',  '/ees/recommendations/trending?hours=…',        'Public: most-viewed products in the window'),
+            ('GET',  '/ees/abandoned-carts',       'Admin: paginated list with filters'),
+            ('GET',  '/ees/abandoned-carts/summary','Admin: totals + recovery rate + lost value'),
+            ('GET',  '/ees/abandoned-carts/:id',   'Admin: detail incl. parsed items'),
+            ('POST', '/ees/abandoned-carts/:id/recovery-link', 'Admin: mint signed recovery URL'),
+            ('POST', '/ees/abandoned-carts/:id/status', 'Admin: mark recovered / dismissed'),
+            ('GET',  '/ees/abandoned-carts/export.csv', 'Admin: CSV export'),
+            ('GET',  '/ees/search-analytics/top',   'Admin: top search queries'),
+            ('GET',  '/ees/search-analytics/no-results', 'Admin: zero-result queries'),
+            ('GET',  '/ees/search-analytics/conversion', 'Admin: search→cart conversion'),
+            ('GET',  '/ees/journey/rage-clicks',    'Admin: rage-click hot spots'),
+            ('GET',  '/ees/journey/dead-clicks',    'Admin: dead-click hot spots'),
+            ('GET',  '/ees/journey/session-summary?visitorId=…', 'Admin: per-session intent labels'),
             ('GET',  '/ees/visitors/summary',      'Admin: top-line counters + daily series'),
             ('GET',  '/ees/visitors/sources',      'Admin: top sources by visits / sessions'),
             ('GET',  '/ees/visitors/top-pages',    'Admin: most-visited URLs'),
             ('GET',  '/ees/visitors/funnel',       'Admin: configurable funnel with drop-offs'),
             ('GET',  '/ees/visitors/exit-pages',   'Admin: top exit pages'),
-            ('GET',  '/ees/visitors/top-events',   'Admin: top custom event types'),
             ('GET',  '/ees/visitors/live',         'Admin: SSE live-now stream'),
             ('GET',  '/ees/visitors/journey/:visitorId', 'Admin: per-visitor timeline'),
-            ('GET',  '/ees/visitors/recent',       'Admin: recent events'),
             ('GET',  '/ees/visitors/export.csv',   'Admin: CSV export'),
-            ('GET',  '/ees/goals',                 'Admin: list conversion goals'),
-            ('POST', '/ees/goals',                 'Admin: create a goal'),
-            ('PUT',  '/ees/goals/:id',             'Admin: update a goal'),
-            ('DELETE', '/ees/goals/:id',           'Admin: delete a goal'),
+            ('POST', '/ees/goals',                 'Admin: create a conversion goal'),
             ('GET',  '/ees/goals/stats',           'Admin: per-goal completion stats'),
         ],
     },
