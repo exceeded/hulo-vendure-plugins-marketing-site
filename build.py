@@ -623,7 +623,7 @@ def index_page():
   <ul>{feats_html}</ul>
   <div class="vp-card-actions">
     <a href="/vendure-plugins/{p['slug']}/" class="btn btn-primary text-sm" style="padding:.6rem 1.2rem">Learn more →</a>
-    <span class="text-xs text-ink-500 font-mono ml-auto" data-hulo-pkg="{html.escape(p['pkg'])}" data-hulo-version-prefix="v">v{p['version']}</span>
+    <!--email_off--><span class="text-xs text-ink-500 font-mono ml-auto" data-hulo-pkg="{html.escape(p['pkg'])}" data-hulo-version-prefix="v">v{p['version']}</span><!--/email_off-->
   </div>
 </article>''')
 
@@ -797,7 +797,7 @@ export const config: VendureConfig = {{
 <a href="{BUY_BASE}/{pkg_short}" class="btn btn-primary">Buy a licence →</a>
 <a href="#install" class="btn btn-secondary">Install</a>
 <a href="/vendure-plugins/{short_id}/docs/" class="btn btn-secondary">Read the manual</a>
-<span class="text-xs text-ink-500 font-mono ml-auto" data-hulo-pkg="{html.escape(p['pkg'])}" data-hulo-version-prefix="{html.escape(p['pkg'])}@">{html.escape(p['pkg'])}@{p['version']}</span>
+<!--email_off--><span class="text-xs text-ink-500 font-mono ml-auto" data-hulo-pkg="{html.escape(p['pkg'])}" data-hulo-version-prefix="v">v{p['version']}</span><!--/email_off-->
 </div>
 </div>
 </section>
