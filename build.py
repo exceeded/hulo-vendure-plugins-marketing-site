@@ -219,7 +219,7 @@ HEADER = '''<!DOCTYPE html>
 <title>{title}</title>
 <meta name="description" content="{description}">
 <link rel="canonical" href="{canonical}">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<link rel="icon" type="image/svg+xml" href="/vendure-plugins/logos/hulo-global.svg?v=1">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Hulo Global">
 <meta property="og:title" content="{title}">
@@ -246,6 +246,12 @@ HEADER = '''<!DOCTYPE html>
 }}
 .vp-hero {{ position: relative; background: linear-gradient(to bottom, var(--color-ink-50, #f8fafc) 0%, #fff 100%); }}
 .vp-hero::before {{ content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .35; background-image: radial-gradient(ellipse 70% 50% at 50% 0%, var(--color-accent-100, #fde68a), transparent 60%); }}
+/* Corporate brand mark — sits at the top of every hero. Small,
+   text-anchored to the logotype so it reads as a clickable badge. */
+.vp-brand {{ display: inline-flex; align-items: center; gap: 10px; text-decoration: none; margin-bottom: 24px; }}
+.vp-brand svg {{ width: 40px; height: 40px; display: block; border-radius: 10px; box-shadow: 0 1px 3px rgba(15,23,42,.10), 0 2px 8px rgba(15,23,42,.06); }}
+.vp-brand-txt {{ font-weight: 700; letter-spacing: -0.01em; color: var(--color-ink-900, #0f172a); font-size: 15px; }}
+.vp-brand:hover .vp-brand-txt {{ color: var(--color-accent-600, #d97706); }}
 .vp-pill {{ display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--color-ink-200, #e2e8f0); background: #fff; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--color-ink-600, #475569); }}
 .vp-pill::before {{ content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--color-accent-500, #f59e0b); }}
 .vp-section {{ padding: 88px 0; }}
@@ -687,6 +693,19 @@ def index_page():
     body = f'''
 <section class="vp-hero">
 <div class="container-page relative pt-24 pb-16 md:pt-32 md:pb-24">
+<!-- HG monogram — corporate mark on every marketing page hero.
+     Same rounded-navy frame as every plugin logo so the family
+     reads consistently. Inline SVG so it doesn't add a network
+     round-trip on first render. -->
+<a href="/vendure-plugins/" class="vp-brand" aria-label="Hulo Global home">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+<rect width="64" height="64" rx="14" fill="#0f1419"/>
+<path d="M14 16 h5 v13 h11 v-13 h5 v32 h-5 v-14 h-11 v14 h-5 z" fill="#ffffff"/>
+<path d="M50 24 A11 11 0 1 0 50 42 L50 34 L44 34 L44 30" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="50" cy="33" r="2.5" fill="#f59e0b"/>
+</svg>
+<span class="vp-brand-txt">Hulo Global</span>
+</a>
 <span class="vp-pill mb-6">Vendure plugins by Hulo Global</span>
 <h1 class="max-w-3xl text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-ink-900 leading-[1.04]">
 Production-grade plugins for your Vendure store.
@@ -785,7 +804,16 @@ export const config: VendureConfig = {{
 
     body = f'''
 <section class="vp-hero">
-<div class="container-page relative pt-16 pb-10 md:pt-24 md:pb-14">
+<div class="container-page relative pt-12 pb-10 md:pt-16 md:pb-14">
+<a href="/vendure-plugins/" class="vp-brand" aria-label="Hulo Global home">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+<rect width="64" height="64" rx="14" fill="#0f1419"/>
+<path d="M14 16 h5 v13 h11 v-13 h5 v32 h-5 v-14 h-11 v14 h-5 z" fill="#ffffff"/>
+<path d="M50 24 A11 11 0 1 0 50 42 L50 34 L44 34 L44 30" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="50" cy="33" r="2.5" fill="#f59e0b"/>
+</svg>
+<span class="vp-brand-txt">Hulo Global</span>
+</a>
 <nav class="mb-5 text-sm text-ink-600">
 <a href="/vendure-plugins/" class="hover:text-ink-900">Vendure plugins</a>
 <span class="mx-2 text-ink-400">/</span>
