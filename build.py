@@ -999,6 +999,22 @@ def main():
         sh = d / 'install.sh'
         sh.write_text(install_sh(p), encoding='utf-8')
         sh.chmod(0o755)
+
+    # Mirror the static/vendure-plugins tree into the dist output so
+    # `deploy.sh` — which only tar/rsyncs `dist/vendure-plugins` —
+    # picks up brand assets like the plugin logos. Deliberately copies
+    # every file so future additions (favicons, OG images, etc.) land
+    # under the same URL prefix without needing another wiring change.
+    import shutil
+    src_static = HERE / 'static' / 'vendure-plugins'
+    if src_static.is_dir():
+        for sub in src_static.iterdir():
+            dest = OUT / sub.name
+            if sub.is_dir():
+                shutil.copytree(sub, dest, dirs_exist_ok=True)
+            else:
+                shutil.copy2(sub, dest)
+
     print(f'Wrote {len(PLUGINS) + 1} pages + {len(PLUGINS)} install scripts + versions.json to {OUT}')
 
 
