@@ -367,6 +367,19 @@ HEADER = '''<!DOCTYPE html>
 }}
 .mobile-nav-link:focus-visible {{ outline: 2px solid var(--color-accent-500, #f59e0b); outline-offset: 2px; }}
 
+/* Compatibility matrix */
+.vp-compat-wrap {{ overflow-x: auto; }}
+.vp-compat {{ border-collapse: collapse; }}
+.vp-compat th, .vp-compat td {{ padding: 14px 18px; font-size: 14px; border-top: 1px solid var(--color-ink-100, #e2e8f0); }}
+.vp-compat thead th {{ border-top: 0; font-weight: 600; color: var(--color-ink-500, #64748b); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }}
+.vp-compat tbody th {{ font-weight: 600; color: var(--color-ink-900, #0f172a); }}
+.vp-compat tbody th a {{ color: inherit; text-decoration: none; }}
+.vp-compat tbody th a:hover {{ color: var(--color-accent-600, #d97706); text-decoration: underline; }}
+.vp-compat tbody tr:hover {{ background: var(--color-ink-50, #f8fafc); }}
+.vp-compat td {{ color: var(--color-ink-700, #334155); }}
+.vp-compat-ver {{ font-size: 13px; color: var(--color-ink-900, #0f172a); }}
+.vp-compat-ok {{ display: inline-block; padding: 3px 10px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 12px; font-weight: 600; white-space: nowrap; }}
+
 /* Catalog comparison: table on desktop, stacked cards on mobile */
 .vp-compare-table {{ display: block; }}
 .vp-compare-cards {{ display: none; }}
@@ -676,6 +689,32 @@ def index_page():
             f'</article>'
         )
 
+    # Compatibility matrix — one row per plugin. Vendure range comes
+    # from each plugin's declared peer dependency; "Verified on" is the
+    # newest Vendure release we build + smoke-test against before
+    # publishing. Kept as data so a plugin version bump (which flows in
+    # via versions.json) keeps the "Latest" column honest.
+    VERIFIED_VENDURE = '3.7.1'
+    compat = {
+        'email-tracking':    ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
+        'geo-block':         ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
+        'visitor-analytics': ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
+    }
+    compat_rows_html = ''
+    for p in PLUGINS:
+        vendure_range, node_range, ts_range = compat.get(
+            p['slug'], ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'))
+        compat_rows_html += (
+            '<tr>'
+            f'<th style="text-align:left"><a href="/vendure-plugins/{p["slug"]}/">{html.escape(p["title"])}</a></th>'
+            f'<td style="text-align:center"><!--email_off--><span class="vp-compat-ver font-mono" data-hulo-pkg="{html.escape(p["pkg"])}" data-hulo-version-prefix="v">v{p["version"]}</span><!--/email_off--></td>'
+            f'<td style="text-align:center">{vendure_range}</td>'
+            f'<td style="text-align:center">{node_range}</td>'
+            f'<td style="text-align:center">{ts_range}</td>'
+            f'<td style="text-align:center"><span class="vp-compat-ok">✓ {VERIFIED_VENDURE}</span></td>'
+            '</tr>'
+        )
+
     faqs = [
         ('How are the plugins licensed?', 'Each plugin is licensed individually. Monthly subscription with a <strong>7-day free trial</strong> (then £9.95/mo, cancel any time), or one-off lifetime (£199, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
         ('How does the free trial work?', 'Pick the monthly plan and enter your email. We collect a payment method via Stripe but don\'t charge for 7 days — and we\'ll send a reminder email 2 days before the trial ends so you can cancel if you change your mind. Trials are limited to one per customer; we detect repeat attempts by the card fingerprint, not just the email.'),
@@ -751,7 +790,35 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 </div>
 </section>
 
-<section class="vp-section" style="background:#fff">
+<section class="vp-section" id="compatibility" style="background:#fff">
+<div class="container-page">
+<div class="max-w-2xl mx-auto text-center" style="margin-bottom:48px">
+<p class="text-sm font-semibold uppercase tracking-wider text-accent-600">Compatibility</p>
+<h2 class="mt-4 text-3xl md:text-4xl font-bold tracking-tight text-ink-900">Verified against the latest Vendure.</h2>
+<p class="mt-4 text-ink-600 leading-relaxed">Every plugin is built and smoke-tested against the newest Vendure release before publishing. The table below is the current support surface — installs cleanly with <code class="font-mono text-sm bg-ink-100 px-1.5 py-0.5 rounded">yarn</code> or <code class="font-mono text-sm bg-ink-100 px-1.5 py-0.5 rounded">npm</code>.</p>
+</div>
+<div class="vp-compat-wrap rounded-2xl border border-ink-100 bg-white table-wrap" role="region" aria-label="Compatibility matrix" tabindex="0">
+<table class="vp-compat w-full" style="min-width:680px">
+<thead>
+<tr>
+<th style="text-align:left">Plugin</th>
+<th style="text-align:center">Latest</th>
+<th style="text-align:center">Vendure&nbsp;core</th>
+<th style="text-align:center">Node</th>
+<th style="text-align:center">TypeScript</th>
+<th style="text-align:center">Verified&nbsp;on</th>
+</tr>
+</thead>
+<tbody>{compat_rows_html}</tbody>
+</table>
+</div>
+<p class="mt-6 text-sm text-ink-500 max-w-3xl mx-auto text-center">
+A boot-time check emits a non-fatal warning if <code class="font-mono text-xs bg-ink-100 px-1 py-0.5 rounded">@vendure/core</code> is outside the tested range, so a future 3.x upgrade is always safe to try. Vendure 4.0 will be tested and re-declared once its changelog lands. Node 20 LTS or newer recommended.
+</p>
+</div>
+</section>
+
+<section class="vp-section" style="background:var(--color-ink-50,#f8fafc)">
 <div class="container-page max-w-3xl">
 <p class="text-sm font-semibold uppercase tracking-wider text-accent-600">FAQ</p>
 <h2 class="mt-4 text-3xl md:text-4xl font-bold tracking-tight text-ink-900" style="margin-bottom:40px">Common questions.</h2>
