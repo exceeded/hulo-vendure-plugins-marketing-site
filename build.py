@@ -206,6 +206,57 @@ PLUGINS = [
             ('GET',  '/ees/goals/stats',           'Admin: per-goal completion stats'),
         ],
     },
+    {
+        'slug': 'fraud-prevention',
+        'pkg': '@huloglobal/vendure-plugin-fraud-prevention',
+        'class': 'FraudPreventionPlugin',
+        'version': '0.1.0',
+        'title': 'Fraud Prevention',
+        'tagline': 'Signal-based risk scoring on every order, monitor/enforce modes, manual review queue, daily threat feeds — chargebacks stopped before fulfilment.',
+        'pricing': {
+            'GBP': {'monthly': '£19.95',  'lifetime': '£399',  'symbol': '£',  'label': 'GBP — British pound'},
+            'USD': {'monthly': '$24.99',  'lifetime': '$499',  'symbol': '$',  'label': 'USD — US dollar'},
+            'EUR': {'monthly': '€22.95',  'lifetime': '€459',  'symbol': '€',  'label': 'EUR — Euro'},
+            'AUD': {'monthly': 'A$36.95', 'lifetime': 'A$749', 'symbol': 'A$', 'label': 'AUD — Australian dollar'},
+            'CAD': {'monthly': 'C$33.95', 'lifetime': 'C$679', 'symbol': 'C$', 'label': 'CAD — Canadian dollar'},
+        },
+        'description': (
+            'Every placed order is risk-scored server-side the moment it lands — '
+            'no storefront integration required. Weighted signals (order velocity '
+            'per IP and per canonical email identity, disposable email domains, '
+            'block/allow lists with CIDR range matching, high-risk countries, '
+            'failed-payment patterns, plus-addressing abuse, first-order value) '
+            'roll up to a 0-100 score. Your per-channel thresholds decide what '
+            'happens: log it, hold it for review, or hold it and tell the '
+            'customer it is being verified. Digital-goods aware: fulfilment '
+            '(licence keys, downloads) waits for approval, so one reviewer '
+            'click is the difference between a sale and a chargeback.'
+        ),
+        'features': [
+            ('Server-side enforcement', 'Assessment runs on OrderPlacedEvent inside Vendure — fraudsters can\'t bypass it by skipping your storefront JS. No checkout integration needed.'),
+            ('Weighted signal scoring', 'Velocity (IP/hour, IP/day, email/day, daily value), order value ceilings, disposable emails, list hits, high-risk countries, failed payments, first-order-high-value. Every weight overridable per channel.'),
+            ('Monitor → enforce rollout', 'Start in monitor mode: everything is scored and logged, nothing is held. Watch the Activity tab, tune thresholds, then flip to enforce.'),
+            ('Manual review queue', 'Held orders wait for a human. Approve releases fulfilment and emails the customer; reject cancels and notifies. Notes + full audit trail on every decision.'),
+            ('Fulfilment hold hook', 'One-line host integration: ask pendingOrderIds() before releasing licence keys or shipping. Approval is the gate, not an afterthought.'),
+            ('Daily threat feeds', 'FireHOL Level 1, Spamhaus DROP (CIDR ranges matched properly), Tor exit nodes and ~3,500 disposable-email domains — synced nightly into your blocklist.'),
+            ('Email canonicalisation', 'fraud+1@gmail.com, fraud+2@gmail.com and f.r.a.u.d@gmail.com all count as ONE identity for velocity — the plus-addressing trick stops working.'),
+            ('Allowlist bypass', 'Trusted identities (your test accounts, key B2B customers, office IPs) skip every check. No more blocking your own QA.'),
+            ('"What-if" simulator', 'Run a hypothetical order (email, IP, value, country) against live data and see the exact signal-by-signal score breakdown — without logging or holding anything.'),
+            ('Multi-tab admin dashboard', 'Overview KPIs + daily chart, Rules, Review queue with count badge, Lists, Simulate, filterable Activity log, Settings. WCAG AA in light and dark themes.'),
+        ],
+        'endpoints': [
+            ('POST', '/fraud-prevention/check',            'Public: storefront pre-check (rate limited, minimal shape)'),
+            ('GET',  '/fraud-prevention/config',           'Admin: per-channel config'),
+            ('POST', '/fraud-prevention/config',           'Admin: save config'),
+            ('GET',  '/fraud-prevention/stats',            'Admin: KPIs + daily series + top IPs'),
+            ('GET',  '/fraud-prevention/cases',            'Admin: review queue'),
+            ('POST', '/fraud-prevention/cases/:id/approve','Admin: release + notify customer'),
+            ('POST', '/fraud-prevention/cases/:id/reject', 'Admin: cancel + notify customer'),
+            ('POST', '/fraud-prevention/simulate',         'Admin: dry-run with full signal breakdown'),
+            ('GET',  '/fraud-prevention/log',              'Admin: filterable audit log'),
+            ('POST', '/fraud-prevention/lists/sync',       'Admin: threat-feed sync (licensed)'),
+        ],
+    },
 ]
 
 
@@ -473,7 +524,7 @@ HEADER = '''<!DOCTYPE html>
 CURRENCY_JS = '''
 <script>
 (function() {
-  var PRICES = ''' + str(CURRENCIES).replace("'", '"') + ''';
+  var PRICES = window.HULO_PRICES_OVERRIDE || ''' + str(CURRENCIES).replace("'", '"') + ''';
   function pickInitial() {
     try {
       var url = new URLSearchParams(location.search).get('currency');
@@ -628,6 +679,12 @@ def index_page():
             'Bot detection + privacy-first defaults',
             'Live-now SSE widget',
         ],
+        'fraud-prevention': [
+            'Risk score on every order, server-side',
+            'Monitor / enforce modes + review queue',
+            'Threat feeds: FireHOL, Spamhaus, Tor, disposable emails',
+            'Fulfilment held until a human approves',
+        ],
     }
     cards = []
     for p in PLUGINS:
@@ -716,7 +773,7 @@ def index_page():
         )
 
     faqs = [
-        ('How are the plugins licensed?', 'Each plugin is licensed individually. Monthly subscription with a <strong>7-day free trial</strong> (then £9.95/mo, cancel any time), or one-off lifetime (£199, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
+        ('How are the plugins licensed?', 'Each plugin is licensed individually. Monthly subscription with a <strong>7-day free trial</strong> (from £9.95/mo depending on the plugin, cancel any time), or one-off lifetime (from £199, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
         ('How does the free trial work?', 'Pick the monthly plan and enter your email. We collect a payment method via Stripe but don\'t charge for 7 days — and we\'ll send a reminder email 2 days before the trial ends so you can cancel if you change your mind. Trials are limited to one per customer; we detect repeat attempts by the card fingerprint, not just the email.'),
         ('How do I manage / cancel my subscription?', 'Every receipt email includes a Stripe Customer Portal link — click it to update your payment method, see invoices, or cancel. No need to email us. Lifetime customers have nothing to manage; reply to your receipt if you need a VAT invoice.'),
         ('I lost my licence key — what now?', 'Re-send every active key on file at <a class="underline underline-offset-2" href="https://elite.charity/licence/forgot">elite.charity/licence/forgot</a>. We always show the same confirmation regardless of whether the email is on file (anti-enumeration), so check spam if nothing arrives. Limited to 5 requests per email per day.'),
@@ -857,6 +914,13 @@ export const config: VendureConfig = {{
 
     short_id = p['slug']
     pkg_short = p['pkg'].split('/')[-1]
+    pricing = p.get('pricing', CURRENCIES)
+    price_mo_gbp = pricing['GBP']['monthly']
+    price_lt_gbp = pricing['GBP']['lifetime']
+    pricing_override_js = (
+        '<script>window.HULO_PRICES_OVERRIDE = ' + json.dumps(pricing) + ';</script>'
+        if 'pricing' in p else ''
+    )
     faqs = [
         ('How do I get a licence key?',
          f'<a class="underline underline-offset-2" href="{BUY_BASE}/{pkg_short}">Buy here</a> — Stripe Checkout, monthly or lifetime. You\'ll receive the JWT key by email; set it as <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">{env_var_name}</code> in your <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">.env</code>.'),
@@ -908,17 +972,18 @@ export const config: VendureConfig = {{
 {feats_html}
 </div>
 </div>
+{pricing_override_js}
 <aside class="vp-pricing-aside">
 <div class="vp-price-card">
 <p class="text-xs uppercase tracking-wider text-accent-600 font-semibold">Monthly · 7 days free</p>
 <p class="vp-price-num mt-2"><span class="vp-trial-num">7</span><small>days free</small></p>
-<p class="mt-2 text-sm text-ink-700">Then <span data-monthly-price>£9.95</span>/month. Cancel anytime before day 8 and pay nothing.</p>
+<p class="mt-2 text-sm text-ink-700">Then <span data-monthly-price>{price_mo_gbp}</span>/month. Cancel anytime before day 8 and pay nothing.</p>
 <a href="{BUY_BASE}/{pkg_short}?plan=monthly" class="btn btn-secondary w-full mt-5" style="text-align:center">Start 7-day free trial →</a>
 <p class="vp-tiny-note">Card required. One trial per customer.</p>
 </div>
 <div class="vp-price-card featured">
 <p class="text-xs uppercase tracking-wider text-accent-600 font-semibold">Lifetime · Best value</p>
-<p class="vp-price-num mt-2" data-lifetime-price>£199</p>
+<p class="vp-price-num mt-2" data-lifetime-price>{price_lt_gbp}</p>
 <p class="mt-2 text-sm text-ink-600">One-off. Never expires. 12 months of updates.</p>
 <a href="{BUY_BASE}/{pkg_short}?plan=lifetime" class="btn btn-primary w-full mt-5" style="text-align:center">Buy lifetime →</a>
 </div>

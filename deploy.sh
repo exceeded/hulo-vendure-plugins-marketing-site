@@ -80,6 +80,8 @@ for url in \
     "https://huloglobal.com/vendure-plugins/email-tracking/docs/" \
     "https://huloglobal.com/vendure-plugins/geo-block/docs/" \
     "https://huloglobal.com/vendure-plugins/visitor-analytics/docs/" \
+    "https://huloglobal.com/vendure-plugins/fraud-prevention/" \
+    "https://huloglobal.com/vendure-plugins/fraud-prevention/docs/" \
     "https://huloglobal.com/legal/" \
     "https://huloglobal.com/legal/terms/" \
     "https://huloglobal.com/legal/privacy/" \

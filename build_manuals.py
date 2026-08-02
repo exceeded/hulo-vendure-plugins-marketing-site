@@ -793,6 +793,81 @@ hulo.search(query, results.totalItems);</div>
     ],
 }
 
+FRAUD_PREVENTION_MANUAL = {
+    'slug': 'fraud-prevention',
+    'title_short': 'Fraud Prevention',
+    'sections': [
+        ('overview', 'Overview', '''
+<p><strong>Fraud Prevention</strong> risk-scores every order server-side the moment it is placed. There is no storefront integration to add and nothing a fraudster can bypass by skipping your checkout JavaScript — the assessment runs inside Vendure on <code>OrderPlacedEvent</code>.</p>
+<p>Weighted signals roll up to a 0&ndash;100 score:</p>
+<ul>
+<li><strong>Velocity</strong> — orders per IP per hour/day, orders per email identity per day, daily spend per identity. Emails are canonicalised first: <code>x+1@gmail.com</code>, <code>x+2@gmail.com</code> and <code>x.y@gmail.com</code> count as one identity.</li>
+<li><strong>Lists</strong> — your manual allow/block entries plus daily-synced threat feeds (FireHOL Level&nbsp;1, Spamhaus DROP, Tor exit nodes, ~3,500 disposable-email domains). CIDR ranges are matched properly.</li>
+<li><strong>Payment behaviour</strong> — failed/declined payment attempts from the same IP within the hour.</li>
+<li><strong>Order shape</strong> — value ceilings, first-order-high-value, high-risk countries (your list).</li>
+</ul>
+<p>Per-channel thresholds decide the outcome: below the review threshold the order flows normally; at or above it the order is <em>held for review</em>; at the block threshold the customer is additionally told the order is being verified. Every assessment is written to a filterable audit log.</p>
+'''),
+        ('install', 'Install', '''
+<p>One package, one line of config. Tables are created automatically on boot.</p>
+<div class="doc-code"><span class="c"># 1. Install</span>
+yarn add @huloglobal/vendure-plugin-fraud-prevention
+
+<span class="c"># 2. Register in vendure-config.ts</span>
+import { <span class="k">FraudPreventionPlugin</span> } from <span class="s">'@huloglobal/vendure-plugin-fraud-prevention'</span>;
+
+export const config: VendureConfig = {
+  plugins: [
+    <span class="k">FraudPreventionPlugin</span>.init({
+      publicBaseUrl: <span class="s">'https://shop.example.com'</span>,
+      licenceKey: process.env.<span class="k">HULO_LICENCE_KEY_FRAUD_PREVENTION</span>,
+    }),
+  ],
+};
+
+<span class="c"># 3. Admin UI — add to your compileUiExtensions extensions array:</span>
+FraudPreventionPlugin.uiExtensions</div>
+<p>Orders need an IP for the IP-based signals — store it in the <code>Order.customFields.ip</code> custom field at checkout.</p>
+'''),
+        ('modes', 'Modes & thresholds', '''
+<p>Each channel runs in one of three modes:</p>
+<ul>
+<li><strong>Off</strong> — no scoring, no logging.</li>
+<li><strong>Monitor</strong> — every order scored and logged; risky orders flagged but never held. The default, and the recommended starting point: watch the Activity tab for a week, then tune.</li>
+<li><strong>Enforce</strong> — orders scoring &ge; the review threshold open a case in the Review queue and licence keys / downloads wait for approval. Orders &ge; the block threshold also email the customer that the order is under verification.</li>
+</ul>
+<p>Defaults: review at 40, block at 70. The status sentence at the top of the admin page always describes, in plain English, exactly what the current configuration will do.</p>
+'''),
+        ('review-queue', 'Review queue', '''
+<p>Held orders land in the Review queue with their score, the exact signals that fired (with per-signal point contributions), customer identity and age.</p>
+<ul>
+<li><strong>Approve</strong> — releases fulfilment; the customer gets a "your order is approved" email (optional).</li>
+<li><strong>Reject</strong> — cancels the order and notifies the customer. Add notes; everything is audited.</li>
+</ul>
+<p><strong>Fulfilment hold integration:</strong> if your fulfilment is custom, gate it with one call:</p>
+<div class="doc-code">import { <span class="k">FraudPreventionService</span> } from <span class="s">'@huloglobal/vendure-plugin-fraud-prevention'</span>;
+
+const held = new Set(await this.fraudService.<span class="k">pendingOrderIds</span>());
+if (held.has(orderId)) continue; <span class="c">// wait for a human</span></div>
+'''),
+        ('lists', 'Lists & threat feeds', '''
+<p>Two manual lists ride on top of the feeds:</p>
+<ul>
+<li><strong>Allowlist</strong> — emails, email domains or IPs that bypass every check. Add your test accounts and key B2B customers here.</li>
+<li><strong>Blocklist</strong> — manual bans: emails, domains, IPs, or CIDR ranges.</li>
+</ul>
+<p>Threat feeds sync nightly at 03:00 (licensed installs): FireHOL Level&nbsp;1, Spamhaus DROP, Tor exit nodes, disposable-email domains. Each feed can also be synced on demand from the Lists tab.</p>
+'''),
+        ('simulate', 'Simulator', '''
+<p>The Simulate tab runs the full assessment for a hypothetical order — email, IP, value, country, first-time-customer flag — against <em>live</em> data (velocity counts your real recent orders) and shows the signal-by-signal score breakdown. Nothing is logged and nothing is held. Use it to sanity-check threshold changes before switching a channel to enforce.</p>
+'''),
+        ('licensing', 'Licensing', '''
+<p>Without a licence key the plugin runs in the <strong>free tier</strong>: monitor mode, manual lists and the simulator — full scoring visibility, no enforcement. A licence enables enforce mode (review queue + fulfilment holds), threat-feed sync and email alerts.</p>
+<p>Licences are JWTs bought from the <a href="/vendure-plugins/fraud-prevention/">plugin page</a> — monthly with a 7-day free trial, or lifetime. Set the key as <code>HULO_LICENCE_KEY_FRAUD_PREVENTION</code> and pass it to <code>init()</code>.</p>
+'''),
+    ],
+}
+
 
 def wrap_tables(html_str):
     """Wrap every <table> in a scroll container so it doesn't overflow on mobile."""
@@ -830,7 +905,7 @@ def render_manual(m):
 
 
 def main():
-    for m in (EMAIL_TRACKING_MANUAL, GEO_BLOCK_MANUAL, VISITOR_ANALYTICS_MANUAL):
+    for m in (EMAIL_TRACKING_MANUAL, GEO_BLOCK_MANUAL, VISITOR_ANALYTICS_MANUAL, FRAUD_PREVENTION_MANUAL):
         d = OUT / m['slug'] / 'docs'
         d.mkdir(parents=True, exist_ok=True)
         (d / 'index.html').write_text(render_manual(m), encoding='utf-8')
