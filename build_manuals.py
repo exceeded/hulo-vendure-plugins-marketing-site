@@ -841,9 +841,11 @@ FraudPreventionPlugin.uiExtensions</div>
         ('review-queue', 'Review queue', '''
 <p>Held orders land in the Review queue with their score, the exact signals that fired (with per-signal point contributions), customer identity and age.</p>
 <ul>
-<li><strong>Approve</strong> — releases fulfilment; the customer gets a "your order is approved" email (optional).</li>
-<li><strong>Reject</strong> — cancels the order and notifies the customer. Add notes; everything is audited.</li>
+<li><strong>Approve</strong> — releases fulfilment; the customer gets your approved-order email.</li>
+<li><strong>Reject</strong> — cancels the order and notifies the customer with your rejection email (refund timeline + a human-appeal path in the default copy). Add notes; everything is audited.</li>
 </ul>
+<p><strong>Customer messages are templates, per channel</strong>: held / approved / rejected each have an editable subject + body with <code>{{orderCode}}</code>, <code>{{firstName}}</code>, <code>{{supportEmail}}</code> and <code>{{reviewHours}}</code> variables, live preview and reset-to-default (Settings tab). A per-channel policy decides when held customers are told: never, block-level only (default), or always.</p>
+<p><strong>Ops alerts</strong> fan out to every channel you configure — Slack, Discord, Microsoft Teams, Telegram, and a generic JSON webhook signed with HMAC-SHA256 (<code>X-Hulo-Signature</code>) for custom integrations. Held, approved, rejected and auto-released cases all ping.</p>
 <p><strong>Fulfilment hold integration:</strong> if your fulfilment is custom, gate it with one call:</p>
 <div class="doc-code">import { <span class="k">FraudPreventionService</span> } from <span class="s">'@huloglobal/vendure-plugin-fraud-prevention'</span>;
 
