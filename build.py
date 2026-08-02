@@ -213,13 +213,6 @@ PLUGINS = [
         'version': '0.1.0',
         'title': 'Fraud Prevention',
         'tagline': 'Signal-based risk scoring on every order, monitor/enforce modes, review queue with customisable customer comms, alerts to Slack/Discord/Teams/Telegram, daily threat feeds — chargebacks stopped before fulfilment.',
-        'pricing': {
-            'GBP': {'monthly': '£19.95',  'lifetime': '£399',  'symbol': '£',  'label': 'GBP — British pound'},
-            'USD': {'monthly': '$24.99',  'lifetime': '$499',  'symbol': '$',  'label': 'USD — US dollar'},
-            'EUR': {'monthly': '€22.95',  'lifetime': '€459',  'symbol': '€',  'label': 'EUR — Euro'},
-            'AUD': {'monthly': 'A$36.95', 'lifetime': 'A$749', 'symbol': 'A$', 'label': 'AUD — Australian dollar'},
-            'CAD': {'monthly': 'C$33.95', 'lifetime': 'C$679', 'symbol': 'C$', 'label': 'CAD — Canadian dollar'},
-        },
         'description': (
             'Every placed order is risk-scored server-side the moment it lands — '
             'no storefront integration required. Weighted signals (order velocity '
@@ -774,7 +767,7 @@ def index_page():
         )
 
     faqs = [
-        ('How are the plugins licensed?', 'Each plugin is licensed individually. Monthly subscription with a <strong>7-day free trial</strong> (from £9.95/mo depending on the plugin, cancel any time), or one-off lifetime (from £199, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
+        ('How are the plugins licensed?', 'Each plugin is licensed individually. Monthly subscription with a <strong>7-day free trial</strong> (then £9.95/mo, cancel any time), or one-off lifetime (£199, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
         ('How does the free trial work?', 'Pick the monthly plan and enter your email. We collect a payment method via Stripe but don\'t charge for 7 days — and we\'ll send a reminder email 2 days before the trial ends so you can cancel if you change your mind. Trials are limited to one per customer; we detect repeat attempts by the card fingerprint, not just the email.'),
         ('How do I manage / cancel my subscription?', 'Every receipt email includes a Stripe Customer Portal link — click it to update your payment method, see invoices, or cancel. No need to email us. Lifetime customers have nothing to manage; reply to your receipt if you need a VAT invoice.'),
         ('I lost my licence key — what now?', 'Re-send every active key on file at <a class="underline underline-offset-2" href="https://elite.charity/licence/forgot">elite.charity/licence/forgot</a>. We always show the same confirmation regardless of whether the email is on file (anti-enumeration), so check spam if nothing arrives. Limited to 5 requests per email per day.'),
