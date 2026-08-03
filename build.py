@@ -483,6 +483,7 @@ HEADER = '''<!DOCTYPE html>
 <ul class="flex items-center gap-6 text-sm font-medium text-ink-700">
 <li><a href="/" class="hover:text-ink-900 transition-colors py-3 px-2 inline-block">Home</a></li>
 <li><a href="/vendure-plugins/" class="hover:text-ink-900 transition-colors py-3 px-2 inline-block">Vendure plugins</a></li>
+<li><a href="/vendure-plugins/roadmap/" class="hover:text-ink-900 transition-colors py-3 px-2 inline-block">Roadmap</a></li>
 <li><a href="/#contact" class="hover:text-ink-900 transition-colors py-3 px-2 inline-block">Contact</a></li>
 </ul>
 <div class="ccy-picker-wrap">
@@ -498,6 +499,7 @@ HEADER = '''<!DOCTYPE html>
 </nav>
 <div class="mobile-controls md:hidden">
 <a href="/vendure-plugins/" class="mobile-nav-link" aria-label="Vendure plugins">Plugins</a>
+<a href="/vendure-plugins/roadmap/" class="mobile-nav-link" aria-label="Roadmap">Roadmap</a>
 <div class="ccy-picker-wrap">
 <label for="ccy-picker-mobile" class="sr-only">Currency</label>
 <select id="ccy-picker-mobile" name="currency" class="ccy-select ccy-select-mobile">
@@ -629,6 +631,8 @@ FOOTER = CURRENCY_JS + VERSION_REFRESH_JS + '''
 <li><a href="/vendure-plugins/email-tracking/" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">Email Tracking</a></li>
 <li><a href="/vendure-plugins/geo-block/" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">Geo Block</a></li>
 <li><a href="/vendure-plugins/visitor-analytics/" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">Visitor Analytics</a></li>
+<li><a href="/vendure-plugins/fraud-prevention/" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">Fraud Prevention</a></li>
+<li><a href="/vendure-plugins/roadmap/" class="underline underline-offset-4 decoration-ink-300 hover:decoration-ink-800">Roadmap &amp; requests</a></li>
 </ul>
 </div>
 <div>
@@ -1126,6 +1130,184 @@ def install_sh(p):
     )
 
 
+
+ROADMAP_STYLE = """
+<style>
+.rm-hero { text-align:center; max-width:720px; margin:0 auto 8px; }
+.rm-grid { display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:start; }
+@media (max-width:900px){ .rm-grid{ grid-template-columns:1fr; } }
+.rm-form-card { border:1px solid var(--color-ink-100,#e2e8f0); border-radius:18px; padding:28px; background:#fff; box-shadow:0 1px 3px rgba(15,23,42,.05); position:sticky; top:96px; }
+.rm-field { margin-bottom:16px; }
+.rm-field label { display:block; font-size:13px; font-weight:700; color:var(--color-ink-800,#1e293b); margin-bottom:6px; }
+.rm-field input, .rm-field select, .rm-field textarea { width:100%; padding:10px 12px; border:1px solid var(--color-ink-200,#cbd5e1); border-radius:10px; font-size:14px; font-family:inherit; color:var(--color-ink-900,#0f172a); background:#fff; }
+.rm-field textarea { min-height:120px; resize:vertical; }
+.rm-field input:focus, .rm-field select:focus, .rm-field textarea:focus { outline:none; border-color:var(--color-accent-500,#f59e0b); box-shadow:0 0 0 3px rgba(245,158,11,.2); }
+.rm-msg { margin-top:12px; font-size:14px; padding:10px 12px; border-radius:10px; display:none; }
+.rm-msg.ok { display:block; background:#dcfce7; color:#166534; }
+.rm-msg.err { display:block; background:#fee2e2; color:#991b1b; }
+.rm-cols { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px; }
+.rm-col h3 { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--color-ink-500,#64748b); margin:0 0 12px; display:flex; align-items:center; gap:8px; }
+.rm-dot { width:9px; height:9px; border-radius:999px; display:inline-block; }
+.rm-dot.considering{background:#eab308;} .rm-dot.planned{background:#0ea5e9;} .rm-dot.in_progress{background:#f97316;} .rm-dot.shipped{background:#22c55e;}
+.rm-item { border:1px solid var(--color-ink-100,#e2e8f0); border-radius:14px; padding:14px 16px; background:#fff; margin-bottom:12px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+.rm-item-plugin { font-size:11px; font-weight:700; color:#334155; background:#f1f5f9; padding:2px 8px; border-radius:6px; display:inline-block; margin-bottom:8px; }
+.rm-item h4 { font-size:14px; font-weight:700; color:var(--color-ink-900,#0f172a); margin:0 0 6px; line-height:1.35; }
+.rm-item p { font-size:13px; color:var(--color-ink-600,#475569); margin:0 0 8px; line-height:1.5; }
+.rm-item .rm-resp { font-size:12.5px; color:#166534; background:#f0fdf4; border-left:3px solid #22c55e; padding:6px 10px; border-radius:6px; margin:8px 0 0; }
+.rm-vote { display:inline-flex; align-items:center; gap:7px; border:1px solid var(--color-ink-200,#cbd5e1); background:#fff; border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700; color:var(--color-ink-700,#334155); cursor:pointer; transition:all .12s; }
+.rm-vote:hover:not(:disabled){ border-color:var(--color-accent-500,#f59e0b); color:#b45309; }
+.rm-vote:disabled{ cursor:default; opacity:.75; }
+.rm-vote.voted{ background:#fff7ed; border-color:#f59e0b; color:#b45309; }
+.rm-empty { color:var(--color-ink-400,#94a3b8); font-size:13px; }
+.rm-loading { color:var(--color-ink-500,#64748b); font-size:14px; padding:20px 0; }
+</style>
+"""
+
+ROADMAP_SCRIPT = """
+<script>
+(function(){
+  var API = 'https://elite.charity/feature-requests';
+  var LABELS = { considering:'Considering', planned:'Planned', in_progress:'In progress', shipped:'Shipped' };
+  var voted = {};
+  try { voted = JSON.parse(localStorage.getItem('hulo-fr-voted')||'{}'); } catch(e){}
+
+  function el(tag, cls, text){ var e=document.createElement(tag); if(cls)e.className=cls; if(text!=null)e.textContent=text; return e; }
+
+  function renderBoard(data){
+    var cols = document.getElementById('rm-cols');
+    cols.innerHTML='';
+    (data.statuses||[]).forEach(function(status){
+      var items = (data.groups&&data.groups[status])||[];
+      var col = el('div','rm-col');
+      var h = el('h3'); var dot=el('span','rm-dot '+status); h.appendChild(dot); h.appendChild(document.createTextNode(LABELS[status]+' ('+items.length+')')); col.appendChild(h);
+      if(!items.length){ col.appendChild(el('p','rm-empty','Nothing here yet.')); }
+      items.forEach(function(it){
+        var card = el('div','rm-item');
+        card.appendChild(el('span','rm-item-plugin', it.plugin));
+        card.appendChild(el('h4', null, it.title));
+        if(it.description) card.appendChild(el('p', null, it.description));
+        if(it.adminResponse) card.appendChild(el('p','rm-resp', it.adminResponse));
+        if(status!=='shipped'){
+          var b = el('button','rm-vote'+(voted[it.id]?' voted':''));
+          b.type='button';
+          b.innerHTML='<span aria-hidden=\"true\">\\u25B2</span> <span class=\"rm-vote-n\">'+it.votes+'</span>';
+          if(voted[it.id]) b.disabled=true;
+          b.addEventListener('click', function(){ vote(it.id, b); });
+          card.appendChild(b);
+        } else {
+          card.appendChild(el('span','rm-vote voted','\\u2713 '+it.votes));
+        }
+        col.appendChild(card);
+      });
+      cols.appendChild(col);
+    });
+  }
+
+  function vote(id, btn){
+    btn.disabled=true;
+    fetch(API+'/'+id+'/vote',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'}})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        if(j && typeof j.votes==='number'){ var n=btn.querySelector('.rm-vote-n'); if(n)n.textContent=j.votes; }
+        btn.classList.add('voted'); voted[id]=1;
+        try{ localStorage.setItem('hulo-fr-voted', JSON.stringify(voted)); }catch(e){}
+      })
+      .catch(function(){ btn.disabled=false; });
+  }
+
+  function load(){
+    fetch(API+'/roadmap').then(function(r){return r.json();}).then(renderBoard)
+      .catch(function(){ document.getElementById('rm-cols').innerHTML='<p class=\"rm-empty\">Roadmap is temporarily unavailable.</p>'; });
+  }
+
+  var form = document.getElementById('rm-form');
+  form.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var msg = document.getElementById('rm-msg'); msg.className='rm-msg';
+    var btn = form.querySelector('button[type=submit]'); btn.disabled=true;
+    var body = new URLSearchParams(new FormData(form)).toString();
+    fetch(API,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body})
+      .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});})
+      .then(function(res){
+        btn.disabled=false;
+        if(res.ok && res.j.ok){ msg.className='rm-msg ok'; msg.textContent=res.j.message||'Thanks! Your idea has been submitted.'; form.reset(); }
+        else { msg.className='rm-msg err'; msg.textContent=(res.j&&res.j.message)||'Something went wrong — please try again.'; }
+      })
+      .catch(function(){ btn.disabled=false; msg.className='rm-msg err'; msg.textContent='Network error — please try again.'; });
+  });
+
+  load();
+})();
+</script>
+"""
+
+def roadmap_page():
+    head = header(
+        'Feature roadmap & requests — HULO Vendure plugins',
+        'https://huloglobal.com/vendure-plugins/roadmap/',
+        'See what we\'re building for the HULO Vendure plugins, vote on what matters to you, and request a feature of your own.',
+    )
+    body = """
+<section class="vp-section bg-ink-50">
+<div class="container-page">
+<div class="rm-hero">
+<span class="vp-pill">Roadmap</span>
+<h1 class="mt-4 text-4xl md:text-5xl font-bold tracking-tight text-ink-900">Help shape the plugins</h1>
+<p class="mt-4 text-lg text-ink-700">Tell us what would make the HULO plugins better for your store. Vote on ideas already on the board, or submit your own — real requests from real stores drive what we build next.</p>
+</div>
+</div>
+</section>
+
+<section class="vp-section bg-white">
+<div class="container-page">
+<div class="rm-grid">
+
+<div>
+<form id="rm-form" class="rm-form-card" novalidate>
+<h2 class="text-xl font-bold text-ink-900 mb-1">Request a feature</h2>
+<p class="text-sm text-ink-600 mb-5">We read every submission. Add your email if you'd like a reply.</p>
+<div class="rm-field">
+<label for="rm-plugin">Which plugin?</label>
+<select id="rm-plugin" name="plugin">
+<option value="general">General / a new plugin</option>
+<option value="email-tracking">Email Tracking</option>
+<option value="geo-block">Geo Block</option>
+<option value="visitor-analytics">Visitor Analytics</option>
+<option value="fraud-prevention">Fraud Prevention</option>
+</select>
+</div>
+<div class="rm-field">
+<label for="rm-title">Your idea, in a sentence</label>
+<input id="rm-title" name="title" maxlength="160" required placeholder="e.g. Export the audit log as CSV">
+</div>
+<div class="rm-field">
+<label for="rm-desc">Any detail? <span style="font-weight:500;color:#94a3b8">(optional)</span></label>
+<textarea id="rm-desc" name="description" maxlength="4000" placeholder="What problem would this solve for you?"></textarea>
+</div>
+<div class="rm-field">
+<label for="rm-email">Email <span style="font-weight:500;color:#94a3b8">(optional — for a reply)</span></label>
+<input id="rm-email" name="email" type="email" maxlength="255" placeholder="you@store.com">
+</div>
+<button type="submit" class="btn btn-primary w-full" style="text-align:center">Submit idea →</button>
+<div id="rm-msg" class="rm-msg" role="status" aria-live="polite"></div>
+<p class="text-xs text-ink-500 mt-3">Submissions are reviewed before appearing on the public board.</p>
+</form>
+</div>
+
+<div>
+<h2 class="text-xl font-bold text-ink-900 mb-1">On the board</h2>
+<p class="text-sm text-ink-600 mb-5">What we're considering, building and have shipped. Click ▲ to vote.</p>
+<div id="rm-cols" class="rm-cols"><p class="rm-loading">Loading the roadmap…</p></div>
+</div>
+
+</div>
+</div>
+</section>
+"""
+    return head + ROADMAP_STYLE + body + ROADMAP_SCRIPT + FOOTER
+
+
+
 def main():
     # Refresh the version numbers from npm. Falls back to the hardcoded
     # value when offline so the build always works.
@@ -1138,6 +1320,9 @@ def main():
 
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / 'index.html').write_text(index_page(), encoding='utf-8')
+    rm = OUT / 'roadmap'
+    rm.mkdir(exist_ok=True)
+    (rm / 'index.html').write_text(roadmap_page(), encoding='utf-8')
     # Emit a flat versions map the client-side updater fetches on load —
     # so version chips always show the current npm version even if the
     # HTML itself was baked hours ago.
