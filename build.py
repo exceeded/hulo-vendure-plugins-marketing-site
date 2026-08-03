@@ -710,10 +710,14 @@ def index_page():
         ['Admin HTTP endpoints', '7', '5', '15', '20'],
         ['Privacy controls', 'IP hash', 'IP allowlist', 'DNT, IP anonymisation, consent gate', 'Allowlist bypass'],
         ['Offline licence verification', 'yes', 'yes', 'yes', 'yes'],
-        ['Self-hosted (no calls to us at runtime)', 'yes', 'yes', 'yes', 'yes'],
+        ['Self-hosted (no calls to us at runtime)', 'yes', 'yes', 'yes', 'yes-note'],
     ]
     def fmt_cell(c, plain=False):
         if c == 'yes': return '<span class="text-accent-600 font-bold">✓</span>' if not plain else '✓'
+        if c == 'yes-note':
+            return ('<span class="text-accent-600 font-bold">✓</span>'
+                    '<sup><a href="#threat-intel-note" class="text-ink-400 no-underline" style="text-decoration:none">†</a></sup>'
+                    if not plain else '✓ †')
         if c == 'no': return '<span class="text-ink-400">—</span>' if not plain else '—'
         return html.escape(c)
     rows_html = '\n'.join(
@@ -831,6 +835,9 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 <div class="vp-compare-cards" aria-hidden="false">
 {''.join(mobile_cards)}
 </div>
+<p id="threat-intel-note" class="mt-6 text-xs text-ink-500 leading-relaxed max-w-3xl mx-auto md:mx-0">
+<strong>†</strong> Fraud Prevention can make optional outbound calls to third-party <strong>threat-intelligence</strong> services — IP-reputation lookups (<code class="font-mono">ip-api.com</code>) and nightly public blocklist feeds (FireHOL, Spamhaus, Tor exit nodes, disposable-email domains). These fetch threat data only, are cached to minimise requests, and the IP-intelligence lookups can be switched off. They never contact Hulo Global — as with every plugin, nothing phones home to us at runtime for the core function.
+</p>
 </div>
 </section>
 
