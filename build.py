@@ -702,15 +702,15 @@ def index_page():
 </article>''')
 
     comparison_rows = [
-        ['Drop-in install (one yarn add)', 'yes', 'yes', 'yes'],
-        ['Channel-aware', 'yes', 'yes', 'yes'],
-        ['Admin UI included', 'yes', 'yes', 'yes'],
-        ['Database entities', '2', '1', '2'],
-        ['Public HTTP endpoints', '4', '3', '1'],
-        ['Admin HTTP endpoints', '7', '5', '15'],
-        ['Privacy controls', 'IP hash', 'IP allowlist', 'DNT, IP anonymisation, consent gate'],
-        ['Offline licence verification', 'yes', 'yes', 'yes'],
-        ['Self-hosted (no calls home at runtime)', 'yes', 'yes', 'yes'],
+        ['Drop-in install (one yarn add)', 'yes', 'yes', 'yes', 'yes'],
+        ['Channel-aware', 'yes', 'yes', 'yes', 'yes'],
+        ['Admin UI included', 'yes', 'yes', 'yes', 'yes'],
+        ['Database tables', '2', '1', '2', '8'],
+        ['Public HTTP endpoints', '4', '3', '1', '1'],
+        ['Admin HTTP endpoints', '7', '5', '15', '20'],
+        ['Privacy controls', 'IP hash', 'IP allowlist', 'DNT, IP anonymisation, consent gate', 'Allowlist bypass'],
+        ['Offline licence verification', 'yes', 'yes', 'yes', 'yes'],
+        ['Self-hosted (no calls to us at runtime)', 'yes', 'yes', 'yes', 'yes'],
     ]
     def fmt_cell(c, plain=False):
         if c == 'yes': return '<span class="text-accent-600 font-bold">✓</span>' if not plain else '✓'
@@ -727,7 +727,7 @@ def index_page():
         for r in comparison_rows
     )
     # Mobile fallback: render the same data as three cards, one per plugin
-    plugin_titles = ['Email Tracking', 'Geo Block', 'Visitor Analytics']
+    plugin_titles = ['Email Tracking', 'Geo Block', 'Visitor Analytics', 'Fraud Prevention']
     mobile_cards = []
     for idx, title in enumerate(plugin_titles):
         rows_for_card = '\n'.join(
@@ -754,6 +754,7 @@ def index_page():
         'email-tracking':    ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'geo-block':         ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'visitor-analytics': ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
+        'fraud-prevention':  ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
     }
     compat_rows_html = ''
     for p in PLUGINS:
@@ -779,7 +780,7 @@ def index_page():
         ('Do the plugins call home?', 'No — licence verification is offline. Each plugin verifies the JWT at boot against an embedded public key. A revocation list is polled once a week (cached, soft-fail), so a brief outage at our end never disables your store. Nothing else leaves your server.'),
         ('Where does customer data live?', 'On your Vendure server — same DB as the rest of your data. No third-party analytics provider. The visitor-analytics plugin\'s ingest endpoint is on your domain.'),
         ('What if I don\'t buy a licence?', 'Plugins still boot in a degraded "evaluation" mode — install, configure, browse data, and the admin UI is functional. The public storefront endpoints are limited (geo-block always reports `enabled:false`; visitor-analytics dashboards return 403). Buy a key when you\'re ready.'),
-        ('Can I see the source?', 'Yes — all three are on GitHub under <a class="underline underline-offset-2" href="https://github.com/exceeded">github.com/exceeded</a>. MIT-style licence on the code itself, separate paid licence for production use.'),
+        ('Can I see the source?', 'Yes — all four are on GitHub under <a class="underline underline-offset-2" href="https://github.com/exceeded">github.com/exceeded</a>. MIT-style licence on the code itself, separate paid licence for production use.'),
         ('Do they work on Vendure 2.x?', 'They target Vendure 3.x (3.0+). Vendure 2.x isn\'t supported because we use some of the 3.x customField improvements.'),
     ]
     faq_html = '\n'.join(f'<details><summary>{html.escape(q)}</summary><p>{a}</p></details>' for q, a in faqs)
@@ -813,13 +814,14 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 </div>
 <!-- Desktop / wide tablet: full comparison table -->
 <div class="vp-compare-table rounded-2xl border border-ink-100 bg-white table-wrap" role="region" aria-label="Plugin comparison" tabindex="0">
-<table class="w-full" style="min-width:640px">
+<table class="w-full" style="min-width:760px">
 <thead>
 <tr>
 <th class="p-4 font-medium text-sm text-ink-500" style="text-align:left"></th>
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Email Tracking</th>
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Geo Block</th>
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Visitor Analytics</th>
+<th class="p-4 font-semibold text-ink-900" style="text-align:center">Fraud Prevention</th>
 </tr>
 </thead>
 <tbody>{rows_html}</tbody>
@@ -870,7 +872,7 @@ A boot-time check emits a non-fatal warning if <code class="font-mono text-xs bg
 '''
     return header('Vendure plugins by Hulo Global',
                   'https://huloglobal.com/vendure-plugins/',
-                  'Production-grade Vendure plugins by Hulo Global — email tracking, geo-blocking, visitor analytics. Drop-in, self-hosted, licensed.') + body + FOOTER
+                  'Production-grade Vendure plugins by Hulo Global — email tracking, geo-blocking, visitor analytics, fraud prevention. Drop-in, self-hosted, licensed.') + body + FOOTER
 
 
 def plugin_page(p):
