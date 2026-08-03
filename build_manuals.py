@@ -872,7 +872,7 @@ if (held.has(orderId)) continue; <span class="c">// wait for a human</span></div
 </table>
 
 <h3>Other feeds you can layer in</h3>
-<p>Custom feed URLs aren't a built-in setting yet, but these well-known public lists are easy to fold into your <strong>manual blocklist</strong> (paste the ranges you care about), and are the ones we add first on request — vote for them on the <a href="/vendure-plugins/roadmap/">roadmap</a>:</p>
+<p><strong>Add your own feeds.</strong> In the Lists tab, paste any public line-based blocklist URL (one entry per line, <code>#</code> comments ignored), pick its type (IP, CIDR range, email or email-domain), and it syncs nightly alongside the built-ins and is matched exactly the same way — CIDR ranges included. Some popular options:</p>
 <table>
 <thead><tr><th>Feed</th><th>What it covers</th><th>Source</th></tr></thead>
 <tbody>
