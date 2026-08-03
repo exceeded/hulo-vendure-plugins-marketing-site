@@ -858,7 +858,33 @@ if (held.has(orderId)) continue; <span class="c">// wait for a human</span></div
 <li><strong>Allowlist</strong> — emails, email domains or IPs that bypass every check. Add your test accounts and key B2B customers here.</li>
 <li><strong>Blocklist</strong> — manual bans: emails, domains, IPs, or CIDR ranges.</li>
 </ul>
-<p>Threat feeds sync nightly at 03:00 (licensed installs): FireHOL Level&nbsp;1, Spamhaus DROP, Tor exit nodes, disposable-email domains. Each feed can also be synced on demand from the Lists tab.</p>
+
+<h3>Built-in threat feeds</h3>
+<p>These sync automatically every night at 03:00 (licensed installs) and can also be synced on demand from the Lists tab. All are free, reputable public sources:</p>
+<table>
+<thead><tr><th>Feed</th><th>What it covers</th><th>Type</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td><strong>FireHOL Level&nbsp;1</strong></td><td>High-confidence malicious IPs &amp; ranges (attacks, spam, C2), aggregated from dozens of sources — the safest IP feed to enforce.</td><td>IP / CIDR</td><td><code>iplists.firehol.org</code></td></tr>
+<tr><td><strong>Spamhaus DROP</strong></td><td>Hijacked and leased netblocks used by professional spammers and cybercriminals.</td><td>CIDR ranges</td><td><code>spamhaus.org/drop</code></td></tr>
+<tr><td><strong>Tor exit nodes</strong></td><td>Live Tor exit relays — legitimate for privacy, but a common origin for card testing.</td><td>IP</td><td><code>check.torproject.org</code></td></tr>
+<tr><td><strong>Disposable email domains</strong></td><td>~3,500 throwaway / temporary-mailbox providers (mailinator, guerrillamail, …).</td><td>Email domain</td><td>community list</td></tr>
+</tbody>
+</table>
+
+<h3>Other feeds you can layer in</h3>
+<p>Custom feed URLs aren't a built-in setting yet, but these well-known public lists are easy to fold into your <strong>manual blocklist</strong> (paste the ranges you care about), and are the ones we add first on request — vote for them on the <a href="/vendure-plugins/roadmap/">roadmap</a>:</p>
+<table>
+<thead><tr><th>Feed</th><th>What it covers</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td><strong>FireHOL Level&nbsp;2–4</strong></td><td>Progressively broader IP reputation — higher coverage, higher false-positive risk. Try in monitor mode first.</td><td><code>iplists.firehol.org</code></td></tr>
+<tr><td><strong>IPsum</strong></td><td>Daily aggregate of IPs seen attacking honeypots, ranked by how many lists flag each one.</td><td><code>github.com/stamparm/ipsum</code></td></tr>
+<tr><td><strong>blocklist.de</strong></td><td>IPs reported for SSH / mail / web attacks in the last 48 hours.</td><td><code>lists.blocklist.de</code></td></tr>
+<tr><td><strong>Emerging Threats — compromised IPs</strong></td><td>Known-compromised hosts, updated frequently.</td><td><code>rules.emergingthreats.net</code></td></tr>
+<tr><td><strong>StopForumSpam</strong></td><td>Emails &amp; IPs tied to spam sign-up abuse — useful against fake-account fraud.</td><td><code>stopforumspam.com</code></td></tr>
+<tr><td><strong>AbuseIPDB</strong></td><td>Community-reported abusive IPs with a confidence score (free API key).</td><td><code>abuseipdb.com</code></td></tr>
+</tbody>
+</table>
+<div class="callout"><strong>Roll out safely:</strong> start any new feed in <strong>monitor</strong> mode and watch the Activity tab for a few days before enforcing. Broad IP feeds occasionally catch shared carrier-grade NAT or corporate-proxy addresses that real customers sit behind, so it pays to see the hits before they can hold an order.</div>
 '''),
         ('simulate', 'Simulator', '''
 <p>The Simulate tab runs the full assessment for a hypothetical order — email, IP, value, country, first-time-customer flag — against <em>live</em> data (velocity counts your real recent orders) and shows the signal-by-signal score breakdown. Nothing is logged and nothing is held. Use it to sanity-check threshold changes before switching a channel to enforce.</p>

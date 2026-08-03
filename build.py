@@ -787,19 +787,6 @@ def index_page():
     body = f'''
 <section class="vp-hero">
 <div class="container-page relative pt-24 pb-16 md:pt-32 md:pb-24">
-<!-- HG monogram — corporate mark on every marketing page hero.
-     Same rounded-navy frame as every plugin logo so the family
-     reads consistently. Inline SVG so it doesn't add a network
-     round-trip on first render. -->
-<a href="/vendure-plugins/" class="vp-brand" aria-label="Hulo Global home">
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
-<rect width="64" height="64" rx="14" fill="#0f1419"/>
-<path d="M14 16 h5 v13 h11 v-13 h5 v32 h-5 v-14 h-11 v14 h-5 z" fill="#ffffff"/>
-<path d="M50 24 A11 11 0 1 0 50 42 L50 34 L44 34 L44 30" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="50" cy="33" r="2.5" fill="#f59e0b"/>
-</svg>
-<span class="vp-brand-txt">Hulo Global</span>
-</a>
 <span class="vp-pill mb-6">Vendure plugins by Hulo Global</span>
 <h1 class="max-w-3xl text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-ink-900 leading-[1.04]">
 Production-grade plugins for your Vendure store.
