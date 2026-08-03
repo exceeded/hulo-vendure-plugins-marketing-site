@@ -1190,12 +1190,12 @@ ROADMAP_SCRIPT = """
         if(status!=='shipped'){
           var b = el('button','rm-vote'+(voted[it.id]?' voted':''));
           b.type='button';
-          b.innerHTML='<span aria-hidden=\"true\">\\u25B2</span> <span class=\"rm-vote-n\">'+it.votes+'</span>';
+          b.innerHTML='<span aria-hidden=\"true\">▲</span> <span class=\"rm-vote-n\">'+it.votes+'</span>';
           if(voted[it.id]) b.disabled=true;
           b.addEventListener('click', function(){ vote(it.id, b); });
           card.appendChild(b);
         } else {
-          card.appendChild(el('span','rm-vote voted','\\u2713 '+it.votes));
+          card.appendChild(el('span','rm-vote voted','✓ '+it.votes));
         }
         col.appendChild(card);
       });
