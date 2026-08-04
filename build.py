@@ -256,6 +256,13 @@ PLUGINS = [
         'pkg': '@huloglobal/vendure-plugin-review-requests',
         'class': 'ReviewRequestPlugin',
         'version': '0.1.0',
+        # Review Requests is priced below the standard plugin rate and sells in
+        # GBP only via Stripe; a per-plugin override keeps its page at £2.95/mo.
+        # Non-GBP selections fall back to GBP in the currency switcher rather
+        # than showing a price you can't actually check out in.
+        'pricing': {
+            'GBP': {'monthly': '£2.95', 'lifetime': '£199', 'symbol': '£', 'label': 'GBP — British pound'},
+        },
         'title': 'Review Requests',
         'tagline': 'Automated post-purchase Trustpilot review invitations, timed off order dates — free Trustpilot integration, customer exclusions, cooldown, editable emails.',
         'description': (
