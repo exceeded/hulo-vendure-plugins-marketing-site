@@ -251,6 +251,47 @@ PLUGINS = [
             ('POST', '/fraud-prevention/lists/sync',       'Admin: threat-feed sync (licensed)'),
         ],
     },
+    {
+        'slug': 'review-requests',
+        'pkg': '@huloglobal/vendure-plugin-review-requests',
+        'class': 'ReviewRequestPlugin',
+        'version': '0.1.0',
+        'title': 'Review Requests',
+        'tagline': 'Automated post-purchase Trustpilot review invitations, timed off order dates — free Trustpilot integration, customer exclusions, cooldown, editable emails.',
+        'description': (
+            'Turn happy customers into reviews on autopilot. An hourly worker finds '
+            'orders that reached Delivered / Payment settled / Shipped a set number of '
+            'days ago and emails the customer a branded, Trustpilot-style invitation '
+            'linking to your FREE Trustpilot review page — no paid Automatic Feedback '
+            'Service. Optionally pull your live TrustScore from the free Trustpilot API '
+            'to show as social proof. Exclude any customer or domain, respect a '
+            'per-customer cooldown, dedupe per order, and let anyone unsubscribe in one '
+            'click. Fully editable email with live preview and test-send, per channel.'
+        ),
+        'features': [
+            ('Timed off order dates', 'Send N days after an order reaches Delivered, Payment settled or Shipped — whichever milestone you choose, per channel.'),
+            ('Free Trustpilot, done right', 'The review button links to trustpilot.com/evaluate/your-domain — organic Service Reviews, completely free. No paid AFS, no per-invite cost.'),
+            ('Live rating as social proof', 'Add a free Trustpilot developer API key and the email shows your current TrustScore + review count ("Rated 4.8 by 1,240 customers"). Optional — the email works without it.'),
+            ('Point anywhere', 'The review-link template is configurable, so you can send customers to Google reviews or any URL instead of Trustpilot.'),
+            ('Exclude customers', 'Never invite specific emails or whole domains — wholesale accounts, staff, VIPs. One-click unsubscribe in every email auto-excludes.'),
+            ('No over-asking', 'Deduped per order, a per-customer cooldown (default 120 days), and a minimum order value so low-value or repeat orders don\'t trigger spam.'),
+            ('Your voice', 'Fully editable subject + HTML body per channel with {{firstName}}, {{orderCode}}, {{businessName}}, {{reviewUrl}} and a live rating block, plus preview and test-send.'),
+            ('Multi-tab admin', 'Overview (sent / eligible now / opt-outs / failed + your live rating), Settings, Email, Exclusions and an Activity log. WCAG AA in light + dark.'),
+            ('GDPR-friendly', 'Signed one-click unsubscribe links, an opt-out list, and full send-log auditing.'),
+        ],
+        'endpoints': [
+            ('GET',  '/review-requests/optout',          'Public: signed one-click unsubscribe page'),
+            ('GET',  '/review-requests/config',          'Admin: per-channel config'),
+            ('POST', '/review-requests/config',          'Admin: save config'),
+            ('GET',  '/review-requests/stats',           'Admin: KPIs + eligibility preview'),
+            ('GET',  '/review-requests/log',             'Admin: send log'),
+            ('POST', '/review-requests/run',             'Admin: send all due now (licensed)'),
+            ('POST', '/review-requests/trustpilot/check','Admin: check live rating + review link'),
+            ('POST', '/review-requests/template/preview','Admin: render the email with sample data'),
+            ('POST', '/review-requests/test-send',       'Admin: send a test to yourself'),
+            ('POST', '/review-requests/exclusions',      'Admin: exclude an email / domain'),
+        ],
+    },
 ]
 
 
@@ -683,6 +724,12 @@ def index_page():
             'Threat feeds: FireHOL, Spamhaus, Tor, disposable emails',
             'Fulfilment held until a human approves',
         ],
+        'review-requests': [
+            'Trustpilot invitations timed off order dates',
+            'Free Trustpilot — no paid Feedback Service',
+            'Live TrustScore in the email as social proof',
+            'Exclusions, cooldown, one-click unsubscribe',
+        ],
     }
     cards = []
     for p in PLUGINS:
@@ -702,15 +749,15 @@ def index_page():
 </article>''')
 
     comparison_rows = [
-        ['Drop-in install (one yarn add)', 'yes', 'yes', 'yes', 'yes'],
-        ['Channel-aware', 'yes', 'yes', 'yes', 'yes'],
-        ['Admin UI included', 'yes', 'yes', 'yes', 'yes'],
-        ['Database tables', '2', '1', '2', '8'],
-        ['Public HTTP endpoints', '4', '3', '1', '1'],
-        ['Admin HTTP endpoints', '7', '5', '15', '20'],
-        ['Privacy controls', 'IP hash', 'IP allowlist', 'DNT, IP anonymisation, consent gate', 'Allowlist bypass'],
-        ['Offline licence verification', 'yes', 'yes', 'yes', 'yes'],
-        ['Self-hosted (no calls to us at runtime)', 'yes', 'yes', 'yes', 'yes-note'],
+        ['Drop-in install (one yarn add)', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Channel-aware', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Admin UI included', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Database tables', '2', '1', '2', '8', '5'],
+        ['Public HTTP endpoints', '4', '3', '1', '1', '1'],
+        ['Admin HTTP endpoints', '7', '5', '15', '20', '13'],
+        ['Privacy controls', 'IP hash', 'IP allowlist', 'DNT, IP anonymisation, consent gate', 'Allowlist bypass', 'Opt-out + exclusions'],
+        ['Offline licence verification', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Self-hosted (no calls to us at runtime)', 'yes', 'yes', 'yes', 'yes-note', 'yes-note'],
     ]
     def fmt_cell(c, plain=False):
         if c == 'yes': return '<span class="text-accent-600 font-bold">✓</span>' if not plain else '✓'
@@ -731,7 +778,7 @@ def index_page():
         for r in comparison_rows
     )
     # Mobile fallback: render the same data as three cards, one per plugin
-    plugin_titles = ['Email Tracking', 'Geo Block', 'Visitor Analytics', 'Fraud Prevention']
+    plugin_titles = ['Email Tracking', 'Geo Block', 'Visitor Analytics', 'Fraud Prevention', 'Review Requests']
     mobile_cards = []
     for idx, title in enumerate(plugin_titles):
         rows_for_card = '\n'.join(
@@ -759,6 +806,7 @@ def index_page():
         'geo-block':         ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'visitor-analytics': ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'fraud-prevention':  ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
+        'review-requests':   ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
     }
     compat_rows_html = ''
     for p in PLUGINS:
@@ -784,7 +832,7 @@ def index_page():
         ('Do the plugins call home?', 'No — licence verification is offline. Each plugin verifies the JWT at boot against an embedded public key. A revocation list is polled once a week (cached, soft-fail), so a brief outage at our end never disables your store. Nothing else leaves your server.'),
         ('Where does customer data live?', 'On your Vendure server — same DB as the rest of your data. No third-party analytics provider. The visitor-analytics plugin\'s ingest endpoint is on your domain.'),
         ('What if I don\'t buy a licence?', 'Plugins still boot in a degraded "evaluation" mode — install, configure, browse data, and the admin UI is functional. The public storefront endpoints are limited (geo-block always reports `enabled:false`; visitor-analytics dashboards return 403). Buy a key when you\'re ready.'),
-        ('Can I see the source?', 'Yes — all four are on GitHub under <a class="underline underline-offset-2" href="https://github.com/exceeded">github.com/exceeded</a>. MIT-style licence on the code itself, separate paid licence for production use.'),
+        ('Can I see the source?', 'Yes — all five are on GitHub under <a class="underline underline-offset-2" href="https://github.com/exceeded">github.com/exceeded</a>. MIT-style licence on the code itself, separate paid licence for production use.'),
         ('Do they work on Vendure 2.x?', 'They target Vendure 3.x (3.0+). Vendure 2.x isn\'t supported because we use some of the 3.x customField improvements.'),
     ]
     faq_html = '\n'.join(f'<details><summary>{html.escape(q)}</summary><p>{a}</p></details>' for q, a in faqs)
@@ -818,7 +866,7 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 </div>
 <!-- Desktop / wide tablet: full comparison table -->
 <div class="vp-compare-table rounded-2xl border border-ink-100 bg-white table-wrap" role="region" aria-label="Plugin comparison" tabindex="0">
-<table class="w-full" style="min-width:760px">
+<table class="w-full" style="min-width:880px">
 <thead>
 <tr>
 <th class="p-4 font-medium text-sm text-ink-500" style="text-align:left"></th>
@@ -826,6 +874,7 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Geo Block</th>
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Visitor Analytics</th>
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Fraud Prevention</th>
+<th class="p-4 font-semibold text-ink-900" style="text-align:center">Review Requests</th>
 </tr>
 </thead>
 <tbody>{rows_html}</tbody>
@@ -836,7 +885,7 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 {''.join(mobile_cards)}
 </div>
 <p id="threat-intel-note" class="mt-6 text-xs text-ink-500 leading-relaxed max-w-3xl mx-auto md:mx-0">
-<strong>†</strong> Fraud Prevention can make optional outbound calls to third-party <strong>threat-intelligence</strong> services — IP-reputation lookups (<code class="font-mono">ip-api.com</code>) and nightly public blocklist feeds (FireHOL, Spamhaus, Tor exit nodes, disposable-email domains). These fetch threat data only, are cached to minimise requests, and the IP-intelligence lookups can be switched off. They never contact Hulo Global — as with every plugin, nothing phones home to us at runtime for the core function.
+<strong>†</strong> Two plugins make optional outbound calls to third parties, never to Hulo Global. <strong>Fraud Prevention</strong> fetches threat-intelligence — IP-reputation lookups (<code class="font-mono">ip-api.com</code>) and nightly public blocklist feeds (FireHOL, Spamhaus, Tor, disposable-email domains), cached, and switchable off. <strong>Review Requests</strong> optionally reads your live rating from the free Trustpilot API and sends invitation emails via your own SMTP. As with every plugin, nothing phones home to us at runtime for the core function.
 </p>
 </div>
 </section>
@@ -879,7 +928,7 @@ A boot-time check emits a non-fatal warning if <code class="font-mono text-xs bg
 '''
     return header('Vendure plugins by Hulo Global',
                   'https://huloglobal.com/vendure-plugins/',
-                  'Production-grade Vendure plugins by Hulo Global — email tracking, geo-blocking, visitor analytics, fraud prevention. Drop-in, self-hosted, licensed.') + body + FOOTER
+                  'Production-grade Vendure plugins by Hulo Global — email tracking, geo-blocking, visitor analytics, fraud prevention, Trustpilot review requests. Drop-in, self-hosted, licensed.') + body + FOOTER
 
 
 def plugin_page(p):

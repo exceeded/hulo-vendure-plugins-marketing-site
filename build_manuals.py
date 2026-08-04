@@ -895,6 +895,68 @@ if (held.has(orderId)) continue; <span class="c">// wait for a human</span></div
 '''),
     ],
 }
+REVIEW_REQUESTS_MANUAL = {
+    'slug': 'review-requests',
+    'title_short': 'Review Requests',
+    'sections': [
+        ('overview', 'Overview', '''
+<p><strong>Review Requests</strong> automatically invites customers to review you after they buy, timed off the order date. An hourly worker finds orders that reached a milestone (Delivered / Payment settled / Shipped) a set number of days ago and emails a branded, Trustpilot-style invitation.</p>
+<p>It uses the <strong>free</strong> Trustpilot review page for the link — no paid Automatic Feedback Service — and can optionally read your live TrustScore from the free Trustpilot API to show as social proof. The whole thing is per-channel, deduped, and respectful: exclusions, a per-customer cooldown, a minimum order value, and one-click unsubscribe.</p>
+'''),
+        ('install', 'Install', '''
+<p>One package, one config block. Tables are created on boot; emails go via your SMTP.</p>
+<div class="doc-code"><span class="c"># 1. Install</span>
+yarn add @huloglobal/vendure-plugin-review-requests
+
+<span class="c"># 2. Register in vendure-config.ts</span>
+import { <span class="k">ReviewRequestPlugin</span> } from <span class="s">'@huloglobal/vendure-plugin-review-requests'</span>;
+
+export const config: VendureConfig = {
+  plugins: [
+    <span class="k">ReviewRequestPlugin</span>.init({
+      publicBaseUrl: <span class="s">'https://shop.example.com'</span>,   <span class="c">// for unsubscribe links</span>
+      licenceKey: process.env.<span class="k">HULO_LICENCE_KEY_REVIEW_REQUESTS</span>,
+    }),
+  ],
+};
+
+<span class="c"># 3. Admin UI — add to your compileUiExtensions extensions array:</span>
+ReviewRequestPlugin.uiExtensions</div>
+<p>Then open <strong>Review requests</strong> in the admin, set your Trustpilot domain, timing and email, hit <em>Send test</em>, and switch the channel on.</p>
+'''),
+        ('trustpilot', 'Free Trustpilot setup', '''
+<p>Everything here is free — no paid Trustpilot plan.</p>
+<ul>
+<li><strong>Review link</strong> — nothing to set up. The button links to <code>https://www.trustpilot.com/evaluate/&lt;your-domain&gt;</code>, which opens a Service Review form. These land as organic reviews.</li>
+<li><strong>Live rating (optional)</strong> — register a free developer app at <a href="https://developers.trustpilot.com/" target="_blank">developers.trustpilot.com</a> for an <strong>API key</strong>, paste it into Settings and click <em>Check rating</em>. The plugin finds your business-unit id from the domain and shows your TrustScore + review count in the email.</li>
+<li><strong>Point elsewhere</strong> — the review-link template is configurable, so you can send customers to Google reviews or any URL instead.</li>
+</ul>
+'''),
+        ('config', 'Timing & rules', '''
+<table>
+<thead><tr><th>Setting</th><th>Default</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td>Trigger state</td><td>Delivered</td><td>The order milestone that starts the clock (Delivered / Payment settled / Shipped).</td></tr>
+<tr><td>Delay (days)</td><td>14</td><td>How long after the order date to send.</td></tr>
+<tr><td>Min order value</td><td>0</td><td>Skip orders below this value.</td></tr>
+<tr><td>Cooldown (days)</td><td>120</td><td>Never invite the same customer more often than this.</td></tr>
+<tr><td>Max per run</td><td>200</td><td>Safety throttle per hourly run.</td></tr>
+</tbody>
+</table>
+<p>Every invitation is deduped per order, and the plain-English status line at the top of the admin page always tells you exactly what the current settings will do.</p>
+'''),
+        ('exclusions', 'Exclusions & opt-out', '''
+<p>Exclude any <strong>email</strong> or whole <strong>domain</strong> in the Exclusions tab — wholesale accounts, staff, VIPs. Every invitation carries a signed one-click <strong>unsubscribe</strong> link; anyone who clicks it is added to the opt-out list automatically and never emailed again. The full send history (sent / skipped / failed, with reasons) is in the Activity tab.</p>
+'''),
+        ('email', 'The email', '''
+<p>The invitation subject and HTML body are fully editable per channel, with variables <code>{{firstName}}</code>, <code>{{orderCode}}</code>, <code>{{businessName}}</code>, <code>{{reviewUrl}}</code> and a <code>{{ratingBlock}}</code> that renders your live stars when available. Use <em>Preview</em> to see it with sample data and <em>Send test</em> to email a copy to yourself before going live.</p>
+'''),
+        ('licensing', 'Licensing', '''
+<p>Free tier: configure, preview and test-send. <strong>Scheduled sending requires a licence</strong> from the <a href="/vendure-plugins/review-requests/">plugin page</a> — monthly with a 7-day free trial, or lifetime. Set the key as <code>HULO_LICENCE_KEY_REVIEW_REQUESTS</code>.</p>
+'''),
+    ],
+}
+
 
 
 def wrap_tables(html_str):
@@ -933,7 +995,7 @@ def render_manual(m):
 
 
 def main():
-    for m in (EMAIL_TRACKING_MANUAL, GEO_BLOCK_MANUAL, VISITOR_ANALYTICS_MANUAL, FRAUD_PREVENTION_MANUAL):
+    for m in (EMAIL_TRACKING_MANUAL, GEO_BLOCK_MANUAL, VISITOR_ANALYTICS_MANUAL, FRAUD_PREVENTION_MANUAL, REVIEW_REQUESTS_MANUAL):
         d = OUT / m['slug'] / 'docs'
         d.mkdir(parents=True, exist_ok=True)
         (d / 'index.html').write_text(render_manual(m), encoding='utf-8')

@@ -83,6 +83,8 @@ for url in \
     "https://huloglobal.com/vendure-plugins/fraud-prevention/" \
     "https://huloglobal.com/vendure-plugins/roadmap/" \
     "https://huloglobal.com/vendure-plugins/fraud-prevention/docs/" \
+    "https://huloglobal.com/vendure-plugins/review-requests/" \
+    "https://huloglobal.com/vendure-plugins/review-requests/docs/" \
     "https://huloglobal.com/legal/" \
     "https://huloglobal.com/legal/terms/" \
     "https://huloglobal.com/legal/privacy/" \
