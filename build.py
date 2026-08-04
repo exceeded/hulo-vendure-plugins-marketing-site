@@ -271,8 +271,8 @@ PLUGINS = [
         'features': [
             ('Timed off order dates', 'Send N days after an order reaches Delivered, Payment settled or Shipped — whichever milestone you choose, per channel.'),
             ('Free Trustpilot, done right', 'The review button links to trustpilot.com/evaluate/your-domain — organic Service Reviews, completely free. No paid AFS, no per-invite cost.'),
-            ('Live rating as social proof', 'Add a free Trustpilot developer API key and the email shows your current TrustScore + review count ("Rated 4.8 by 1,240 customers"). Optional — the email works without it.'),
-            ('Point anywhere', 'The review-link template is configurable, so you can send customers to Google reviews or any URL instead of Trustpilot.'),
+            ('Live rating as social proof', 'Show your current star rating + review count right in the email ("Rated 4.8 by 1,240 customers") — pulled live from Trustpilot or Google. Optional; the email works without it.'),
+            ('Trustpilot, Google or anywhere', 'One-click platform picker builds the review link for Trustpilot, Google reviews, Reviews.io — or paste any custom URL. Trustpilot and Google also show a live star rating in the email.'),
             ('Exclude customers', 'Never invite specific emails or whole domains — wholesale accounts, staff, VIPs. One-click unsubscribe in every email auto-excludes.'),
             ('No over-asking', 'Deduped per order, a per-customer cooldown (default 120 days), and a minimum order value so low-value or repeat orders don\'t trigger spam.'),
             ('Your voice', 'Fully editable subject + HTML body per channel with {{firstName}}, {{orderCode}}, {{businessName}}, {{reviewUrl}} and a live rating block, plus preview and test-send.'),
