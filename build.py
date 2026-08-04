@@ -261,7 +261,7 @@ PLUGINS = [
         # Non-GBP selections fall back to GBP in the currency switcher rather
         # than showing a price you can't actually check out in.
         'pricing': {
-            'GBP': {'monthly': '£2.95', 'lifetime': '£199', 'symbol': '£', 'label': 'GBP — British pound'},
+            'GBP': {'monthly': '£2.95', 'lifetime': '£59', 'symbol': '£', 'label': 'GBP — British pound'},
         },
         'title': 'Review Requests',
         'tagline': 'Automated post-purchase Trustpilot review invitations, timed off order dates — free Trustpilot integration, customer exclusions, cooldown, editable emails.',
