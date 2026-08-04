@@ -951,6 +951,7 @@ ReviewRequestPlugin.uiExtensions</div>
 '''),
         ('email', 'The email', '''
 <p>The invitation subject and HTML body are fully editable per channel, with variables <code>{{firstName}}</code>, <code>{{orderCode}}</code>, <code>{{businessName}}</code>, <code>{{reviewUrl}}</code> and a <code>{{ratingBlock}}</code> that renders your live stars when available. Use <em>Preview</em> to see it with sample data and <em>Send test</em> to email a copy to yourself before going live.</p>
+<p><strong>Product reviews.</strong> Under <em>What to ask for</em> in Settings, choose Store review, Product reviews, or Both. In product (or both) mode the email lists the actual products from the customer's order, each with its own "Review this" button linking to your storefront's product-review page — set the link template (with <code>{slug}</code>, <code>{name}</code>, <code>{orderCode}</code>) in Settings. Two extra template variables, <code>{{reviewButton}}</code> and <code>{{productList}}</code>, control where the store button and the product list appear.</p>
 '''),
         ('licensing', 'Licensing', '''
 <p>Free tier: configure, preview and test-send. <strong>Scheduled sending requires a licence</strong> from the <a href="/vendure-plugins/review-requests/">plugin page</a> — monthly with a 7-day free trial, or lifetime. Set the key as <code>HULO_LICENCE_KEY_REVIEW_REQUESTS</code>.</p>
