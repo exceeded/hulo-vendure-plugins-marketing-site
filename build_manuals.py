@@ -929,6 +929,7 @@ ReviewRequestPlugin.uiExtensions</div>
 <ul>
 <li><strong>Review link</strong> — nothing to set up. The button links to <code>https://www.trustpilot.com/evaluate/&lt;your-domain&gt;</code>, which opens a Service Review form. These land as organic reviews.</li>
 <li><strong>Live rating (optional)</strong> — register a free developer app at <a href="https://developers.trustpilot.com/" target="_blank">developers.trustpilot.com</a> for an <strong>API key</strong>, paste it into Settings and click <em>Check rating</em>. The plugin finds your business-unit id from the domain and shows your TrustScore + review count in the email.</li>
+<li><strong>Google reviews live rating</strong> — pick Google in the platform selector, add a Google Maps API key (Places API enabled) and your Place ID, then Connect. The email shows your live Google star rating the same way, and the review button drops customers straight on Google's "write a review" box.</li>
 <li><strong>Point elsewhere</strong> — the review-link template is configurable, so you can send customers to Google reviews or any URL instead.</li>
 </ul>
 '''),
