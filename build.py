@@ -1173,26 +1173,88 @@ yarn migration:run</div>
                   p['tagline']) + body + FOOTER
 
 
+CHANGELOG_STYLE = """
+<style>
+/* Changelog — self-contained styles so nothing inherits the plugin-card
+   flex/grid list treatment (which splits <strong> lead-ins into columns). */
+.cl-wrap { max-width: 50rem; margin: 0 auto; }
+.cl-rail { position: relative; padding-left: 1.75rem; }
+.cl-rail::before { content: ""; position: absolute; left: 8px; top: 10px; bottom: 10px;
+  width: 2px; background: linear-gradient(to bottom, #e2e8f0, #f1f5f9); border-radius: 1px; }
+.cl-release { position: relative; background: #ffffff; border: 1px solid #e2e8f0;
+  border-radius: 14px; padding: 1.6rem 1.9rem 1.7rem; margin-bottom: 1.4rem;
+  box-shadow: 0 1px 3px rgba(15,20,25,.04); }
+.cl-release::before { content: ""; position: absolute; left: -1.75rem; top: 1.9rem;
+  width: 12px; height: 12px; margin-left: 3px; border-radius: 50%;
+  background: #f59e0b; border: 2.5px solid #fff; box-shadow: 0 0 0 2px #e2e8f0; }
+.cl-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem .8rem; }
+.cl-version { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.35rem; font-weight: 700; color: #0f1419; letter-spacing: -.01em; }
+.cl-date { font-size: .875rem; color: #64748b; }
+.cl-latest { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: #b45309; background: #fef3c7; border: 1px solid #fde68a;
+  padding: .18rem .55rem; border-radius: 999px; }
+.cl-badge { display: inline-block; font-size: .7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; padding: .22rem .6rem; border-radius: 999px; margin: 1.1rem 0 .1rem; }
+.cl-badge.added      { color: #15803d; background: #f0fdf4; border: 1px solid #bbf7d0; }
+.cl-badge.changed    { color: #b45309; background: #fffbeb; border: 1px solid #fde68a; }
+.cl-badge.fixed      { color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; }
+.cl-badge.security   { color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; }
+.cl-badge.removed, .cl-badge.deprecated, .cl-badge.other
+                     { color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; }
+.cl-list { margin: .55rem 0 0; padding: 0; list-style: none; }
+.cl-list li { display: block; position: relative; padding-left: 1.15rem;
+  margin: .55rem 0; color: #334155; font-size: .975rem; line-height: 1.7; }
+.cl-list li::before { content: ""; position: absolute; left: 0; top: .68em;
+  width: 6px; height: 6px; border-radius: 50%; background: #cbd5e1; }
+.cl-list li strong { color: #0f1419; font-weight: 650; }
+.cl-list li code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .85em; background: #f1f5f9; border: 1px solid #e2e8f0;
+  padding: .08em .35em; border-radius: 5px; white-space: nowrap; }
+@media (max-width: 640px) {
+  .cl-rail { padding-left: 0; }
+  .cl-rail::before, .cl-release::before { display: none; }
+  .cl-release { padding: 1.2rem 1.1rem 1.3rem; }
+}
+</style>
+"""
+
+MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+          'August', 'September', 'October', 'November', 'December']
+
+
+def pretty_date(iso: str) -> str:
+    m = _re.match(r'(\d{4})-(\d{2})-(\d{2})', iso)
+    if not m:
+        return iso
+    return f"{int(m.group(3))} {MONTHS[int(m.group(2)) - 1]} {m.group(1)}"
+
+
 def changelog_page(p, releases):
     latest = releases[0] if releases else None
     rel_html = []
-    for r in releases:
+    for idx, r in enumerate(releases):
         secs = []
         for heading, items in r['sections']:
+            kind = heading.strip().lower()
+            if kind not in ('added', 'changed', 'fixed', 'security', 'removed', 'deprecated'):
+                kind = 'other'
             lis = '\n'.join(f'<li>{_md_inline(i)}</li>' for i in items)
             secs.append(
-                f'<p class="text-xs uppercase tracking-wider text-accent-600 font-semibold mt-4">{html.escape(heading)}</p>'
-                f'<ul class="mt-2 space-y-2 text-ink-700 leading-relaxed list-disc pl-5">{lis}</ul>')
+                f'<span class="cl-badge {kind}">{html.escape(heading)}</span>'
+                f'<ul class="cl-list">{lis}</ul>')
+        latest_chip = '<span class="cl-latest">Latest</span>' if idx == 0 else ''
         rel_html.append(f"""
-<article class="vp-card" id="v{html.escape(r['version'])}" style="margin-bottom:1.25rem">
-  <div class="flex flex-wrap items-baseline gap-3">
-    <h2 class="text-2xl font-bold text-ink-900 font-mono">v{html.escape(r['version'])}</h2>
-    <span class="text-sm text-ink-500">{html.escape(r['date'])}</span>
+<article class="cl-release" id="v{html.escape(r['version'])}">
+  <div class="cl-head">
+    <h2 class="cl-version">v{html.escape(r['version'])}</h2>
+    <span class="cl-date">{html.escape(pretty_date(r['date']))}</span>
+    {latest_chip}
   </div>
   {''.join(secs)}
 </article>""")
     latest_line = (
-        f"Latest release: <span class='font-mono'>v{html.escape(latest['version'])}</span> ({html.escape(latest['date'])})."
+        f"Latest release: <span class='font-mono'>v{html.escape(latest['version'])}</span> — {html.escape(pretty_date(latest['date']))}."
         if latest else 'No releases published yet.')
     body = f'''
 <section class="vp-hero">
@@ -1212,17 +1274,19 @@ def changelog_page(p, releases):
 </div>
 </div>
 </section>
-<section class="vp-section bg-white">
-<div class="container-page" style="max-width:56rem">
+<section class="vp-section" style="background:#f8fafc">
+<div class="container-page">
+<div class="cl-wrap"><div class="cl-rail">
 <!--email_off-->
 {''.join(rel_html)}
 <!--/email_off-->
+</div></div>
 </div>
 </section>
 '''
     return header(f"Changelog — {p['title']} — Hulo Global",
                   f"https://huloglobal.com/vendure-plugins/{p['slug']}/changelog/",
-                  f"Release history and version notes for {p['pkg']}.") + body + FOOTER
+                  f"Release history and version notes for {p['pkg']}.") + CHANGELOG_STYLE + body + FOOTER
 
 
 INSTALL_SH = '''#!/usr/bin/env bash
