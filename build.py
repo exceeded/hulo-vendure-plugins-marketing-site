@@ -107,6 +107,26 @@ CURRENCIES = {
     'CAD': {'monthly': 'C$17.95','lifetime': 'C$339','symbol': 'C$', 'label': 'CAD — Canadian dollar'},
 }
 
+# Currencies the licence server can actually charge (a Stripe Price ID
+# exists). The display tables above stay multi-currency so re-enabling a
+# currency later is a one-line change here — but the picker only offers
+# what checkout can honour, so a shopper is never shown $12.99 and then
+# charged the GBP price.
+PURCHASABLE_CURRENCIES = ['GBP']
+
+def ccy_picker_html(select_id: str, mobile: bool = False) -> str:
+    if len(PURCHASABLE_CURRENCIES) < 2:
+        return ''
+    opts = '\n'.join(
+        f'<option value="{c}">{CURRENCIES[c]["symbol"]} {c}</option>'
+        for c in PURCHASABLE_CURRENCIES
+    )
+    label = ('<label for="%s" class="sr-only">Currency</label>' % select_id) if mobile \
+        else ('<label for="%s" class="ccy-label">Currency:</label>' % select_id)
+    cls = 'ccy-select ccy-select-mobile' if mobile else 'ccy-select'
+    return f'<div class="ccy-picker-wrap">{label}<select id="{select_id}" name="currency" class="{cls}">{opts}</select></div>'
+
+
 PLUGINS = [
     {
         'slug': 'email-tracking',
@@ -595,30 +615,12 @@ HEADER = '''<!DOCTYPE html>
 <li><a href="/vendure-plugins/roadmap/" class="hover:text-ink-900 transition-colors py-3 px-2 inline-block">Roadmap</a></li>
 <li><a href="/#contact" class="hover:text-ink-900 transition-colors py-3 px-2 inline-block">Contact</a></li>
 </ul>
-<div class="ccy-picker-wrap">
-<label for="ccy-picker" class="ccy-label">Currency:</label>
-<select id="ccy-picker" name="currency" class="ccy-select">
-<option value="GBP">£ GBP</option>
-<option value="USD">$ USD</option>
-<option value="EUR">€ EUR</option>
-<option value="AUD">A$ AUD</option>
-<option value="CAD">C$ CAD</option>
-</select>
-</div>
+''' + ccy_picker_html('ccy-picker') + '''
 </nav>
 <div class="mobile-controls md:hidden">
 <a href="/vendure-plugins/" class="mobile-nav-link" aria-label="Vendure plugins">Plugins</a>
 <a href="/vendure-plugins/roadmap/" class="mobile-nav-link" aria-label="Roadmap">Roadmap</a>
-<div class="ccy-picker-wrap">
-<label for="ccy-picker-mobile" class="sr-only">Currency</label>
-<select id="ccy-picker-mobile" name="currency" class="ccy-select ccy-select-mobile">
-<option value="GBP">£ GBP</option>
-<option value="USD">$ USD</option>
-<option value="EUR">€ EUR</option>
-<option value="AUD">A$ AUD</option>
-<option value="CAD">C$ CAD</option>
-</select>
-</div>
+''' + ccy_picker_html('ccy-picker-mobile', mobile=True) + '''
 </div>
 <div id="ccy-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 </div>
@@ -630,6 +632,7 @@ CURRENCY_JS = '''
 <script>
 (function() {
   var PRICES = window.HULO_PRICES_OVERRIDE || ''' + str(CURRENCIES).replace("'", '"') + ''';
+  var PURCHASABLE = ''' + str(PURCHASABLE_CURRENCIES).replace("'", '"') + ''';
   function pickInitial() {
     try {
       var url = new URLSearchParams(location.search).get('currency');
@@ -658,6 +661,7 @@ CURRENCY_JS = '''
     initialised = true;
   }
   var initial = pickInitial();
+  if (PURCHASABLE.indexOf(initial) === -1) initial = PURCHASABLE[0] || 'GBP';
   ['ccy-picker', 'ccy-picker-mobile'].forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
