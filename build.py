@@ -114,13 +114,46 @@ CURRENCIES = {
 # charged the GBP price.
 PURCHASABLE_CURRENCIES = ['GBP']
 
-def ccy_picker_html(select_id: str, mobile: bool = False) -> str:
-    if len(PURCHASABLE_CURRENCIES) < 2:
+# Indicative FX for display-only estimates (billing stays in GBP until real
+# per-currency Stripe prices exist). Matches APPROX_FX on the licence server.
+APPROX_FX = {
+    'USD': {'rate': 1.29, 'symbol': '$',  'label': '≈ $ USD'},
+    'EUR': {'rate': 1.17, 'symbol': '€',  'label': '≈ € EUR'},
+    'AUD': {'rate': 1.93, 'symbol': 'A$', 'label': '≈ A$ AUD'},
+    'CAD': {'rate': 1.75, 'symbol': 'C$', 'label': '≈ C$ CAD'},
+}
+
+
+def approx_from_gbp(gbp_price: str, fx: dict) -> str:
+    import re as _re2
+    m = _re2.search(r'[0-9][0-9.]*', str(gbp_price or ''))
+    if not m:
         return ''
-    opts = '\n'.join(
-        f'<option value="{c}">{CURRENCIES[c]["symbol"]} {c}</option>'
-        for c in PURCHASABLE_CURRENCIES
-    )
+    v = float(m.group(0)) * fx['rate']
+    return '≈ ' + fx['symbol'] + (f'{v:.2f}' if v < 100 else str(round(v)))
+
+
+def display_price_table(gbp_monthly: str, gbp_lifetime: str) -> dict:
+    """GBP real prices + estimate entries for every APPROX_FX currency."""
+    table = {'GBP': {'monthly': gbp_monthly, 'lifetime': gbp_lifetime, 'symbol': '£', 'approx': False}}
+    for cc, fx in APPROX_FX.items():
+        table[cc] = {
+            'monthly': approx_from_gbp(gbp_monthly, fx),
+            'lifetime': approx_from_gbp(gbp_lifetime, fx),
+            'symbol': fx['symbol'],
+            'approx': True,
+        }
+    return table
+
+def ccy_picker_html(select_id: str, mobile: bool = False) -> str:
+    shown = PURCHASABLE_CURRENCIES + [c for c in APPROX_FX if c not in PURCHASABLE_CURRENCIES]
+    if len(shown) < 2:
+        return ''
+    def opt_label(c):
+        if c in PURCHASABLE_CURRENCIES:
+            return f'{CURRENCIES[c]["symbol"]} {c}'
+        return APPROX_FX[c]['label']
+    opts = '\n'.join(f'<option value="{c}">{opt_label(c)}</option>' for c in shown)
     label = ('<label for="%s" class="sr-only">Currency</label>' % select_id) if mobile \
         else ('<label for="%s" class="ccy-label">Currency:</label>' % select_id)
     cls = 'ccy-select ccy-select-mobile' if mobile else 'ccy-select'
@@ -631,7 +664,7 @@ HEADER = '''<!DOCTYPE html>
 CURRENCY_JS = '''
 <script>
 (function() {
-  var PRICES = window.HULO_PRICES_OVERRIDE || ''' + str(CURRENCIES).replace("'", '"') + ''';
+  var PRICES = window.HULO_PRICES_OVERRIDE || ''' + __import__('json').dumps(display_price_table(CURRENCIES['GBP']['monthly'], CURRENCIES['GBP']['lifetime'])) + ''';
   var PURCHASABLE = ''' + str(PURCHASABLE_CURRENCIES).replace("'", '"') + ''';
   function pickInitial() {
     try {
@@ -653,7 +686,9 @@ CURRENCY_JS = '''
     var p = PRICES[ccy] || PRICES.GBP;
     document.querySelectorAll('[data-monthly-price]').forEach(function(el) { el.textContent = p.monthly; });
     document.querySelectorAll('[data-lifetime-price]').forEach(function(el) { el.textContent = p.lifetime; });
-    document.querySelectorAll('[data-currency-input]').forEach(function(el) { el.value = ccy; });
+    var chargeCcy = p.approx ? 'GBP' : ccy;
+    document.querySelectorAll('[data-currency-input]').forEach(function(el) { el.value = chargeCcy; });
+    document.querySelectorAll('[data-approx-note]').forEach(function(el) { el.style.display = p.approx ? '' : 'none'; });
     try { localStorage.setItem('hulo-currency', ccy); } catch (e) {}
     if (live && initialised) {
       live.textContent = 'Currency changed to ' + ccy + '. Monthly ' + p.monthly + ', lifetime ' + p.lifetime + '.';
@@ -1032,10 +1067,9 @@ export const config: VendureConfig = {{
     pricing = p.get('pricing', CURRENCIES)
     price_mo_gbp = pricing['GBP']['monthly']
     price_lt_gbp = pricing['GBP']['lifetime']
-    pricing_override_js = (
-        '<script>window.HULO_PRICES_OVERRIDE = ' + json.dumps(pricing) + ';</script>'
-        if 'pricing' in p else ''
-    )
+    # Every plugin page carries an override: GBP real + per-currency estimates.
+    pricing_override_js = ('<script>window.HULO_PRICES_OVERRIDE = '
+        + json.dumps(display_price_table(price_mo_gbp, price_lt_gbp)) + ';</script>')
     faqs = [
         ('How do I get a licence key?',
          f'<a class="underline underline-offset-2" href="{BUY_BASE}/{pkg_short}">Buy here</a> — Stripe Checkout, monthly or lifetime. You\'ll receive the JWT key by email; set it as <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">{env_var_name}</code> in your <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">.env</code>.'),
@@ -1103,6 +1137,7 @@ export const config: VendureConfig = {{
 <p class="mt-2 text-sm text-ink-600">One-off. Never expires. 12 months of updates.</p>
 <a href="{BUY_BASE}/{pkg_short}?plan=lifetime" class="btn btn-primary w-full mt-5" style="text-align:center">Buy lifetime →</a>
 </div>
+<p data-approx-note style="display:none" class="mt-3 text-xs text-ink-500">Prices marked ≈ are estimates — you'll be billed in £ GBP and your bank converts at its own rate.</p>
 <p class="mt-4 text-xs text-ink-500 leading-relaxed">Payments processed by Stripe. VAT applied where applicable. 30-day refund if it doesn't fit your stack. By proceeding you accept our <a href="/legal/terms/" class="underline">Terms</a> and <a href="/legal/privacy/" class="underline">Privacy Policy</a>.</p>
 </aside>
 </div>
