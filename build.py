@@ -34,6 +34,66 @@ def fetch_npm_version(pkg: str) -> str | None:
 
 HERE = Path(__file__).parent
 OUT = HERE / 'dist' / 'vendure-plugins'
+PACKAGES_DIR = HERE.parent / 'packages'
+
+
+def pkg_dir(pkg: str) -> Path:
+    """@huloglobal/vendure-plugin-foo -> ../packages/plugin-foo"""
+    return PACKAGES_DIR / pkg.split('/')[-1].replace('vendure-', '')
+
+
+def local_pkg_version(pkg: str) -> str | None:
+    """Version from the monorepo package.json — the source of truth when the
+    npm registry is unreachable. Beats a frozen literal that goes stale."""
+    try:
+        return json.loads((pkg_dir(pkg) / 'package.json').read_text())['version']
+    except Exception:
+        return None
+
+
+import re as _re
+
+
+def _md_inline(text: str) -> str:
+    """Escape, then apply the tiny markdown subset the changelogs use."""
+    out = html.escape(text)
+    out = _re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', out)
+    out = _re.sub(r'`([^`]+)`', r'<code class="font-mono text-[0.85em] bg-ink-100 px-1 py-0.5 rounded">\1</code>', out)
+    return out
+
+
+def parse_changelog(pkg: str):
+    """Parse a Keep-a-Changelog CHANGELOG.md into
+    [{'version', 'date', 'sections': [(heading, [item, ...]), ...]}, ...]."""
+    path = pkg_dir(pkg) / 'CHANGELOG.md'
+    if not path.is_file():
+        return []
+    releases = []
+    release = section = None
+    for line in path.read_text(encoding='utf-8').splitlines():
+        m = _re.match(r'##\s+\[([^\]]+)\]\s*[—–-]+\s*(\S+)', line)
+        if m:
+            release = {'version': m.group(1), 'date': m.group(2), 'sections': []}
+            releases.append(release)
+            section = None
+            continue
+        if release is None:
+            continue
+        m = _re.match(r'###\s+(.+)', line)
+        if m:
+            section = (m.group(1).strip(), [])
+            release['sections'].append(section)
+            continue
+        if _re.match(r'^\[[^\]]+\]:\s', line):  # reference-style link defs
+            continue
+        if line.startswith('- '):
+            if section is None:
+                section = ('Changes', [])
+                release['sections'].append(section)
+            section[1].append(line[2:].strip())
+        elif line.startswith('  ') and section and section[1]:
+            section[1][-1] += ' ' + line.strip()
+    return releases
 
 ASTRO_CSS = '/_astro/index@_@astro.CpJRZGi5.css'
 BUY_BASE = 'https://elite.charity/licence/buy'
@@ -752,7 +812,7 @@ def index_page():
   <ul>{feats_html}</ul>
   <div class="vp-card-actions">
     <a href="/vendure-plugins/{p['slug']}/" class="btn btn-primary text-sm" style="padding:.6rem 1.2rem">Learn more →</a>
-    <!--email_off--><span class="text-xs text-ink-500 font-mono ml-auto" data-hulo-pkg="{html.escape(p['pkg'])}" data-hulo-version-prefix="v">v{p['version']}</span><!--/email_off-->
+    <a href="/vendure-plugins/{p['slug']}/changelog/" class="ml-auto" title="Changelog"><!--email_off--><span class="text-xs text-ink-500 font-mono hover:underline" data-hulo-pkg="{html.escape(p['pkg'])}" data-hulo-version-prefix="v">v{p['version']}</span><!--/email_off--></a>
   </div>
 </article>''')
 
@@ -1007,7 +1067,8 @@ export const config: VendureConfig = {{
 <a href="{BUY_BASE}/{pkg_short}" class="btn btn-primary">Buy a licence →</a>
 <a href="#install" class="btn btn-secondary">Install</a>
 <a href="/vendure-plugins/{short_id}/docs/" class="btn btn-secondary">Read the manual</a>
-<!--email_off--><span class="text-xs text-ink-500 font-mono ml-auto" data-hulo-pkg="{html.escape(p['pkg'])}" data-hulo-version-prefix="v">v{p['version']}</span><!--/email_off-->
+<a href="/vendure-plugins/{p['slug']}/changelog/" class="btn btn-secondary">Changelog</a>
+<a href="/vendure-plugins/{p['slug']}/changelog/" class="ml-auto" title="See what changed in each release"><!--email_off--><span class="text-xs text-ink-500 font-mono hover:underline" data-hulo-pkg="{html.escape(p['pkg'])}" data-hulo-version-prefix="v">v{p['version']}</span><!--/email_off--></a>
 </div>
 </div>
 </section>
@@ -1110,6 +1171,58 @@ yarn migration:run</div>
     return header(f"{p['title']} — Vendure plugin by Hulo Global",
                   f"https://huloglobal.com/vendure-plugins/{p['slug']}/",
                   p['tagline']) + body + FOOTER
+
+
+def changelog_page(p, releases):
+    latest = releases[0] if releases else None
+    rel_html = []
+    for r in releases:
+        secs = []
+        for heading, items in r['sections']:
+            lis = '\n'.join(f'<li>{_md_inline(i)}</li>' for i in items)
+            secs.append(
+                f'<p class="text-xs uppercase tracking-wider text-accent-600 font-semibold mt-4">{html.escape(heading)}</p>'
+                f'<ul class="mt-2 space-y-2 text-ink-700 leading-relaxed list-disc pl-5">{lis}</ul>')
+        rel_html.append(f"""
+<article class="vp-card" id="v{html.escape(r['version'])}" style="margin-bottom:1.25rem">
+  <div class="flex flex-wrap items-baseline gap-3">
+    <h2 class="text-2xl font-bold text-ink-900 font-mono">v{html.escape(r['version'])}</h2>
+    <span class="text-sm text-ink-500">{html.escape(r['date'])}</span>
+  </div>
+  {''.join(secs)}
+</article>""")
+    latest_line = (
+        f"Latest release: <span class='font-mono'>v{html.escape(latest['version'])}</span> ({html.escape(latest['date'])})."
+        if latest else 'No releases published yet.')
+    body = f'''
+<section class="vp-hero">
+<div class="container-page relative pt-12 pb-10 md:pt-16 md:pb-14">
+<nav class="mb-5 text-sm text-ink-600">
+<a href="/vendure-plugins/" class="hover:text-ink-900">Vendure plugins</a>
+<span class="mx-2 text-ink-400">/</span>
+<a href="/vendure-plugins/{p['slug']}/" class="hover:text-ink-900">{html.escape(p['title'])}</a>
+<span class="mx-2 text-ink-400">/</span>
+<span class="text-ink-900 font-medium">Changelog</span>
+</nav>
+<h1 class="max-w-3xl text-4xl sm:text-5xl font-bold tracking-tight text-ink-900 leading-[1.04]">{html.escape(p['title'])} changelog</h1>
+<p class="mt-4 max-w-2xl text-lg text-ink-600 leading-relaxed">Every release of <!--email_off--><code class="font-mono text-base">{html.escape(p['pkg'])}</code><!--/email_off-->. {latest_line}</p>
+<div class="mt-6 flex flex-wrap items-center gap-3">
+<a href="/vendure-plugins/{p['slug']}/" class="btn btn-secondary">Plugin page</a>
+<a href="/vendure-plugins/{p['slug']}/docs/" class="btn btn-secondary">Manual</a>
+</div>
+</div>
+</section>
+<section class="vp-section bg-white">
+<div class="container-page" style="max-width:56rem">
+<!--email_off-->
+{''.join(rel_html)}
+<!--/email_off-->
+</div>
+</section>
+'''
+    return header(f"Changelog — {p['title']} — Hulo Global",
+                  f"https://huloglobal.com/vendure-plugins/{p['slug']}/changelog/",
+                  f"Release history and version notes for {p['pkg']}.") + body + FOOTER
 
 
 INSTALL_SH = '''#!/usr/bin/env bash
@@ -1365,10 +1478,10 @@ def main():
     # Refresh the version numbers from npm. Falls back to the hardcoded
     # value when offline so the build always works.
     for p in PLUGINS:
-        latest = fetch_npm_version(p['pkg'])
+        latest = fetch_npm_version(p['pkg']) or local_pkg_version(p['pkg'])
         if latest:
             if latest != p['version']:
-                print(f"  {p['pkg']}: {p['version']} → {latest} (npm)")
+                print(f"  {p['pkg']}: {p['version']} → {latest}")
             p['version'] = latest
 
     OUT.mkdir(parents=True, exist_ok=True)
@@ -1388,6 +1501,12 @@ def main():
         d = OUT / p['slug']
         d.mkdir(exist_ok=True)
         (d / 'index.html').write_text(plugin_page(p), encoding='utf-8')
+        releases = parse_changelog(p['pkg'])
+        if releases and releases[0]['version'] != p['version']:
+            print(f"  WARNING {p['pkg']}: changelog top {releases[0]['version']} != published {p['version']}")
+        cl = d / 'changelog'
+        cl.mkdir(exist_ok=True)
+        (cl / 'index.html').write_text(changelog_page(p, releases), encoding='utf-8')
         sh = d / 'install.sh'
         sh.write_text(install_sh(p), encoding='utf-8')
         sh.chmod(0o755)
