@@ -160,6 +160,33 @@ def ccy_picker_html(select_id: str, mobile: bool = False) -> str:
     return f'<div class="ccy-picker-wrap">{label}<select id="{select_id}" name="currency" class="{cls}">{opts}</select></div>'
 
 
+# Capabilities every plugin in the suite shares — appended to each product
+# page's feature list and endpoint table at render time so they stay in
+# one place.
+COMMON_FEATURES = [
+    ('MySQL, MariaDB & PostgreSQL', 'The plugin follows whatever database your Vendure `dbConnectionOptions` use — no configuration. Verified against PostgreSQL 17; MySQL/MariaDB installs are unchanged.'),
+    ('Licence activation in the admin', 'Paste your licence key straight into the plugin\'s admin settings — it\'s verified and stored server-side, no `.env` edit, no redeploy. Environment keys still take precedence for infrastructure-as-code setups.'),
+    ('One-click in-app updates', 'When a new version ships, an update banner shows current → latest with a What\'s-new link to the changelog. "Update now" installs the registry-verified release via your project\'s own package manager (yarn/npm/pnpm auto-detected) and gracefully restarts under pm2/systemd. Disable with `HULO_SELF_UPDATE=off`.'),
+]
+
+# API prefix per plugin, for the shared licence/update endpoint rows.
+ROUTE_PREFIX = {
+    'email-tracking': '/email-track',
+    'geo-block': '/geo-block',
+    'visitor-analytics': '/ees',
+    'fraud-prevention': '/fraud-prevention',
+    'review-requests': '/review-requests',
+}
+
+def common_endpoints(slug: str):
+    pre = ROUTE_PREFIX.get(slug, '/' + slug)
+    return [
+        ('GET',  f'{pre}/licence/status',   'Admin: licence + evaluation + update status'),
+        ('POST', f'{pre}/licence/activate', 'Admin: activate a licence key from the admin UI'),
+        ('POST', f'{pre}/update/run',       'Admin: one-click in-app update + graceful restart'),
+    ]
+
+
 PLUGINS = [
     {
         'slug': 'email-tracking',
@@ -342,9 +369,11 @@ PLUGINS = [
             ('Server-side enforcement', 'Assessment runs on OrderPlacedEvent inside Vendure — fraudsters can\'t bypass it by skipping your storefront JS. No checkout integration needed.'),
             ('Weighted signal scoring', 'Velocity (IP/hour, IP/day, email/day, daily value), order value ceilings, disposable emails, list hits, high-risk countries, failed payments, identity fan-out (many emails from one IP = card testing), VPN/proxy/datacentre IPs, IP vs billing-country mismatch, MX-less email domains. Every weight overridable per channel.'),
             ('Monitor → enforce rollout', 'Start in monitor mode: everything is scored and logged, nothing is held. Watch the Activity tab, tune thresholds, then flip to enforce.'),
+            ('"Off" never means blind', 'Even with protection disabled the engine still scores every order and records a shadow assessment. Risky shadow-scored orders warn in the server log, fan out to your ops channels and can email the admin — so you keep the full risk picture while protection is paused, and turning it back on starts from evidence, not guesswork.'),
+            ('Risk score on the order page', 'Every paid order\'s detail page shows the risk score out of 100, level, contributing signals and review-case status — colour-coded, light + dark theme. Your team sees the risk where they already work.'),
             ('Manual review queue', 'Held orders wait for a human. Approve releases fulfilment; reject cancels — and each can be done silently (no customer email) or, on reject, with a one-click silent blocklist of the email + IP so the fraudster is turned away next time and never tipped off. Alerts fan out to Slack, Discord, Microsoft Teams, Telegram and an HMAC-signed webhook; a per-channel auto-approve timer means nothing strands over a weekend. Full audit trail on every decision.'),
             ('Fulfilment hold hook', 'One-line host integration: ask pendingOrderIds() before releasing licence keys or shipping. Approval is the gate, not an afterthought.'),
-            ('Daily threat feeds', 'FireHOL Level 1, Spamhaus DROP (CIDR ranges matched properly), Tor exit nodes and ~3,500 disposable-email domains — synced nightly into your blocklist.'),
+            ('Daily threat feeds + one-click presets', 'FireHOL Level 1, Spamhaus DROP (CIDR ranges matched properly), Tor exit nodes and ~3,500 disposable-email domains synced nightly — plus seven curated add-with-one-click presets (IPsum L3+, blocklist.de, FireHOL L2/L3, Emerging Threats compromised, CINS Army, StopForumSpam toxic domains). No URL hunting.'),
             ('Email canonicalisation', 'fraud+1@gmail.com, fraud+2@gmail.com and f.r.a.u.d@gmail.com all count as ONE identity for velocity — the plus-addressing trick stops working.'),
             ('Trust works both ways', 'Returning customers earn NEGATIVE points — a real repeat buyer rarely trips a hold. Allowlisted identities (test accounts, key B2B customers, office IPs) skip every check entirely.'),
             ('Customer messages in your voice', 'Every gating outcome — held, approved, rejected — is a per-channel editable template with variables, live preview and thoughtful defaults: a held order reads as \'a quick security check\' with a stated turnaround, never an accusation, and rejections carry a refund timeline plus a human-appeal path. Each shows a default / customised badge; reset any selection or all of them in one click. You choose when — and whether — customers are told: never, block-level only, or always.'),
@@ -362,6 +391,8 @@ PLUGINS = [
             ('POST', '/fraud-prevention/simulate',         'Admin: dry-run with full signal breakdown'),
             ('GET',  '/fraud-prevention/log',              'Admin: filterable audit log'),
             ('POST', '/fraud-prevention/lists/sync',       'Admin: threat-feed sync (licensed)'),
+            ('GET',  '/fraud-prevention/order-assessment/:orderId', 'Admin: score + signals for the order-page panel'),
+            ('GET',  '/fraud-prevention/feeds/presets',    'Admin: curated threat-feed presets'),
         ],
     },
     {
@@ -395,9 +426,10 @@ PLUGINS = [
             ('Trustpilot, Google or anywhere', 'One-click platform picker builds the review link for Trustpilot, Google reviews, Reviews.io — or paste any custom URL. Trustpilot and Google also show a live star rating in the email.'),
             ('Product reviews too', 'Ask for a store review, product reviews, or both. In product mode the email lists the actual items the customer bought, each with its own "Review this" button linking to your storefront\'s product-review page.'),
             ('Exclude customers', 'Never invite specific emails or whole domains — wholesale accounts, staff, VIPs. One-click unsubscribe in every email auto-excludes.'),
-            ('No over-asking', 'Deduped per order, a per-customer cooldown (default 120 days), and a minimum order value so low-value or repeat orders don\'t trigger spam.'),
+            ('No over-asking, no double-sends', 'Deduped per order with a concurrency guard on the sender, a per-customer cooldown (default 120 days), and a minimum order value — a customer can\'t be invited twice for one order, and every skip is audit-logged once with its reason.'),
             ('Your voice', 'Fully editable subject + HTML body per channel with {{firstName}}, {{orderCode}}, {{businessName}}, {{reviewUrl}} and a live rating block, plus preview and test-send.'),
             ('Multi-tab admin', 'Overview (sent / eligible now / opt-outs / failed + your live rating), Settings, Email, Exclusions and an Activity log. WCAG AA in light + dark.'),
+            ('Send from the order page', 'Every order\'s detail page shows its invitation status — sent, scheduled, excluded or opted out — with a manual Send now, a confirmed Resend, and a send-anyway override for staff judgement calls.'),
             ('GDPR-friendly', 'Signed one-click unsubscribe links, an opt-out list, and full send-log auditing.'),
         ],
         'endpoints': [
@@ -411,6 +443,8 @@ PLUGINS = [
             ('POST', '/review-requests/template/preview','Admin: render the email with sample data'),
             ('POST', '/review-requests/test-send',       'Admin: send a test to yourself'),
             ('POST', '/review-requests/exclusions',      'Admin: exclude an email / domain'),
+            ('GET',  '/review-requests/order-status/:orderId', 'Admin: invitation state for the order-page panel'),
+            ('POST', '/review-requests/send-order/:orderId',   'Admin: manual send / resend from the order page'),
         ],
     },
 ]
@@ -859,9 +893,10 @@ def index_page():
         ['Drop-in install (one yarn add)', 'yes', 'yes', 'yes', 'yes', 'yes'],
         ['Channel-aware', 'yes', 'yes', 'yes', 'yes', 'yes'],
         ['Admin UI included', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['MySQL / MariaDB / PostgreSQL', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Licence activation in the admin', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['One-click in-app updates', 'yes', 'yes', 'yes', 'yes', 'yes'],
         ['Database tables', '2', '1', '2', '8', '5'],
-        ['Public HTTP endpoints', '4', '3', '1', '1', '1'],
-        ['Admin HTTP endpoints', '7', '5', '15', '20', '13'],
         ['Privacy controls', 'IP hash', 'IP allowlist', 'DNT, IP anonymisation, consent gate', 'Allowlist bypass', 'Opt-out + exclusions'],
         ['Offline licence verification', 'yes', 'yes', 'yes', 'yes', 'yes'],
         ['Self-hosted (no calls to us at runtime)', 'yes', 'yes', 'yes', 'yes-note', 'yes-note'],
@@ -1041,11 +1076,11 @@ A boot-time check emits a non-fatal warning if <code class="font-mono text-xs bg
 def plugin_page(p):
     feats_html = '\n'.join(
         f'<div class="vp-feat"><div class="vp-feat-tick" aria-hidden="true">{TICK_SVG}</div><div><h3>{html.escape(t)}</h3><p>{html.escape(d)}</p></div></div>'
-        for t, d in p['features']
+        for t, d in list(p['features']) + COMMON_FEATURES
     )
     endpoints_html = '\n'.join(
         f'<div class="vp-endpoint"><span class="vp-method {m}">{m}</span><code>{html.escape(path)}</code><span class="vp-desc">{html.escape(desc)}</span></div>'
-        for m, path, desc in p['endpoints']
+        for m, path, desc in list(p['endpoints']) + common_endpoints(p['slug'])
     )
     env_var_name = 'HULO_LICENCE_KEY_' + p['slug'].upper().replace('-', '_')
 
@@ -1072,9 +1107,13 @@ export const config: VendureConfig = {{
         + json.dumps(display_price_table(price_mo_gbp, price_lt_gbp)) + ';</script>')
     faqs = [
         ('How do I get a licence key?',
-         f'<a class="underline underline-offset-2" href="{BUY_BASE}/{pkg_short}">Buy here</a> — Stripe Checkout, monthly or lifetime. You\'ll receive the JWT key by email; set it as <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">{env_var_name}</code> in your <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">.env</code>.'),
+         f'<a class="underline underline-offset-2" href="{BUY_BASE}/{pkg_short}">Buy here</a> — Stripe Checkout, monthly or lifetime. You\'ll receive the JWT key by email. Paste it into the plugin\'s admin settings (Activate) — no redeploy — or set it as <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">{env_var_name}</code> in your <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">.env</code> if you prefer config-as-code; the env key wins when both are present.'),
         ('Does it work without a key?',
-         'Yes — the plugin boots in a degraded "evaluation" mode. You can install, configure, and inspect the admin UI before committing.'),
+         'Yes — every install starts a 14-day, fully-featured evaluation: configure it, use every premium feature, and see what it does with your real traffic. After the window it degrades gracefully (core recording keeps working, premium actions pause) until a key is activated.'),
+        ('Which databases are supported?',
+         'MySQL, MariaDB and PostgreSQL (verified against PostgreSQL 17). The plugin follows your Vendure <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">dbConnectionOptions</code> automatically — there is nothing to configure.'),
+        ('How do updates work?',
+         f'The plugin checks the npm registry daily. When a newer version exists, the admin dashboard shows an update banner with a What\'s-new link to the <a class="underline underline-offset-2" href="/vendure-plugins/{p["slug"]}/changelog/">changelog</a> and an "Update now" button that installs the registry-verified release via your own package manager and gracefully restarts under your process supervisor. Prefer manual control? Copy the install command instead, or set <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">HULO_SELF_UPDATE=off</code>.'),
         ('Where is data stored?',
          'In your Vendure database. The plugin adds its own tables via a migration — your data never leaves your server.'),
         ('Will it survive a Vendure upgrade?',
