@@ -1114,7 +1114,7 @@ export const config: VendureConfig = {{
         + json.dumps(display_price_table(price_mo_gbp, price_lt_gbp, p.get('pricing'))) + ';</script>')
     faqs = [
         ('How do I get a licence key?',
-         f'<a class="underline underline-offset-2" href="{BUY_BASE}/{pkg_short}">Buy here</a> — Stripe Checkout, monthly or lifetime. You\'ll receive the JWT key by email. Paste it into the plugin\'s admin settings (Activate) — no redeploy — or set it as <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">{env_var_name}</code> in your <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">.env</code> if you prefer config-as-code; the env key wins when both are present.'),
+         f'<a class="underline underline-offset-2" href="{BUY_BASE}/{pkg_short}">Buy here</a> — Stripe Checkout — monthly, annual (two months free) or lifetime. You\'ll receive the JWT key by email. Paste it into the plugin\'s admin settings (Activate) — no redeploy — or set it as <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">{env_var_name}</code> in your <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">.env</code> if you prefer config-as-code; the env key wins when both are present.'),
         ('Does it work without a key?',
          'Yes — every install starts a 14-day, fully-featured evaluation: configure it, use every premium feature, and see what it does with your real traffic. After the window it degrades gracefully (core recording keeps working, premium actions pause) until a key is activated.'),
         ('Which databases are supported?',
