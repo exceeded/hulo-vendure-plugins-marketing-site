@@ -107,12 +107,10 @@ CURRENCIES = {
     'CAD': {'monthly': 'C$17.95','lifetime': 'C$339','symbol': 'C$', 'label': 'CAD — Canadian dollar'},
 }
 
-# Currencies the licence server can actually charge (a Stripe Price ID
-# exists). The display tables above stay multi-currency so re-enabling a
-# currency later is a one-line change here — but the picker only offers
-# what checkout can honour, so a shopper is never shown $12.99 and then
-# charged the GBP price.
-PURCHASABLE_CURRENCIES = ['GBP']
+# Currencies the licence server charges natively: every plan Price carries
+# Stripe currency_options for these (set 2026-08-28), so the picker shows
+# real, chargeable prices — no estimates.
+PURCHASABLE_CURRENCIES = ['GBP', 'USD', 'EUR', 'AUD', 'CAD']
 
 # Indicative FX for display-only estimates (billing stays in GBP until real
 # per-currency Stripe prices exist). Matches APPROX_FX on the licence server.
@@ -133,16 +131,21 @@ def approx_from_gbp(gbp_price: str, fx: dict) -> str:
     return '≈ ' + fx['symbol'] + (f'{v:.2f}' if v < 100 else str(round(v)))
 
 
-def display_price_table(gbp_monthly: str, gbp_lifetime: str) -> dict:
-    """GBP real prices + estimate entries for every APPROX_FX currency."""
+def display_price_table(gbp_monthly: str, gbp_lifetime: str, real: dict | None = None) -> dict:
+    """Real prices for purchasable currencies (from `real`, else CURRENCIES
+    when amounts match the default anchors); FX estimates only for anything
+    left over."""
     table = {'GBP': {'monthly': gbp_monthly, 'lifetime': gbp_lifetime, 'symbol': '£', 'approx': False}}
-    for cc, fx in APPROX_FX.items():
-        table[cc] = {
-            'monthly': approx_from_gbp(gbp_monthly, fx),
-            'lifetime': approx_from_gbp(gbp_lifetime, fx),
-            'symbol': fx['symbol'],
-            'approx': True,
-        }
+    source = real or (CURRENCIES if gbp_monthly == CURRENCIES['GBP']['monthly'] else None)
+    for cc in [c for c in APPROX_FX if c != 'GBP']:
+        if cc in PURCHASABLE_CURRENCIES and source and cc in source:
+            table[cc] = {'monthly': source[cc]['monthly'], 'lifetime': source[cc]['lifetime'],
+                         'symbol': source[cc]['symbol'], 'approx': False}
+        else:
+            fx = APPROX_FX[cc]
+            table[cc] = {'monthly': approx_from_gbp(gbp_monthly, fx),
+                         'lifetime': approx_from_gbp(gbp_lifetime, fx),
+                         'symbol': fx['symbol'], 'approx': True}
     return table
 
 def ccy_picker_html(select_id: str, mobile: bool = False) -> str:
@@ -401,11 +404,14 @@ PLUGINS = [
         'class': 'ReviewRequestPlugin',
         'version': '0.1.0',
         # Review Requests is priced below the standard plugin rate and sells in
-        # GBP only via Stripe; a per-plugin override keeps its page at £2.95/mo.
-        # Non-GBP selections fall back to GBP in the currency switcher rather
-        # than showing a price you can't actually check out in.
+        # Real per-currency prices — must match the currency_options on the
+        # Stripe price objects.
         'pricing': {
-            'GBP': {'monthly': '£2.95', 'lifetime': '£59', 'symbol': '£', 'label': 'GBP — British pound'},
+            'GBP': {'monthly': '£2.95',  'lifetime': '£59',   'symbol': '£',  'label': 'GBP — British pound'},
+            'USD': {'monthly': '$3.99',  'lifetime': '$79',   'symbol': '$',  'label': 'USD — US dollar'},
+            'EUR': {'monthly': '€3.49',  'lifetime': '€69',   'symbol': '€',  'label': 'EUR — Euro'},
+            'AUD': {'monthly': 'A$5.95', 'lifetime': 'A$115', 'symbol': 'A$', 'label': 'AUD — Australian dollar'},
+            'CAD': {'monthly': 'C$5.49', 'lifetime': 'C$105', 'symbol': 'C$', 'label': 'CAD — Canadian dollar'},
         },
         'title': 'Review Requests',
         'tagline': 'Automated post-purchase Trustpilot review invitations, timed off order dates — free Trustpilot integration, customer exclusions, cooldown, editable emails.',
@@ -1102,9 +1108,10 @@ export const config: VendureConfig = {{
     pricing = p.get('pricing', CURRENCIES)
     price_mo_gbp = pricing['GBP']['monthly']
     price_lt_gbp = pricing['GBP']['lifetime']
-    # Every plugin page carries an override: GBP real + per-currency estimates.
+    # Every plugin page carries an override: real prices for purchasable
+    # currencies, estimates only for anything without a Stripe amount.
     pricing_override_js = ('<script>window.HULO_PRICES_OVERRIDE = '
-        + json.dumps(display_price_table(price_mo_gbp, price_lt_gbp)) + ';</script>')
+        + json.dumps(display_price_table(price_mo_gbp, price_lt_gbp, p.get('pricing'))) + ';</script>')
     faqs = [
         ('How do I get a licence key?',
          f'<a class="underline underline-offset-2" href="{BUY_BASE}/{pkg_short}">Buy here</a> — Stripe Checkout, monthly or lifetime. You\'ll receive the JWT key by email. Paste it into the plugin\'s admin settings (Activate) — no redeploy — or set it as <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">{env_var_name}</code> in your <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">.env</code> if you prefer config-as-code; the env key wins when both are present.'),
