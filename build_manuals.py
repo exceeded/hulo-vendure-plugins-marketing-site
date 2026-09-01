@@ -1004,9 +1004,9 @@ plugins: [
 '''),
         ('workflow', 'The quoting workflow', '''
 <ol>
-<li><strong>Build:</strong> New quote → search the catalogue by name/SKU (price pre-fills) or add custom lines. Set quantities, unit-price overrides and per-line discounts; add a quote-level discount, VAT rate, validity and notes/terms. Totals preview live.</li>
-<li><strong>Send:</strong> "Save &amp; send" emails the customer a branded message with the signed quote link. Re-send any time; the link is stable.</li>
-<li><strong>Track:</strong> the first open flips the quote to <em>viewed</em>. The customer accepts by typing their full name (recorded as a signature with a timestamp) or declines with a reason — you're notified by email either way.</li>
+<li><strong>Build:</strong> New quote → search existing customers to autofill their details, then search the catalogue by name/SKU (price pre-fills) or add custom lines. Set quantities, unit-price overrides and per-line discounts; add a quote-level discount, VAT rate, validity and notes/terms. Totals preview live.</li>
+<li><strong>Send:</strong> "Save &amp; send" emails the customer a branded message with the signed quote link — sent <em>as</em> the member of staff you pick in the editor (their name fronts the From header, replies go to them, and the quote page shows "Prepared by"). Preview the rendered email or test-send it to yourself first. Re-send any time; the link is stable.</li>
+<li><strong>Track:</strong> the first open flips the quote to <em>viewed</em> (optionally emailing you at that moment — the best follow-up cue). Add internal notes to the activity trail; extend validity (reviving expired quotes) in one click. The customer accepts by typing their full name (recorded as a signature with a timestamp) or declines with a reason — you're notified by email either way.</li>
 <li><strong>Chase:</strong> the hourly worker sends one reminder for unopened quotes after N days, an expires-soon nudge before the validity date, and expires overdue quotes automatically.</li>
 <li><strong>Convert:</strong> on an accepted quote, "Convert to order" creates a Vendure <em>draft order</em>: catalogue lines become real order lines and one "Quotation pricing" surcharge reconciles any difference, so the draft total equals the quote exactly. Complete the draft in Orders as usual.</li>
 </ol>
