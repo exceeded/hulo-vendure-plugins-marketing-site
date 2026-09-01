@@ -223,7 +223,7 @@ PLUGINS = [
             ('Customer picker + preview + test-send', 'Search existing Vendure customers to autofill the quote; preview the rendered email or test-send the real thing to yourself before the customer ever sees it.'),
             ('Opened notifications + extend validity', 'Optional "email me the moment the quote is first opened" — the perfect follow-up cue — plus one-click validity extension that can revive an expired quote.'),
             ('Pipeline KPIs', 'Win rate and sends over 30 days, open pipeline value, and average send-to-decision time — on the dashboard where you quote.'),
-            ('Per-channel everything', 'Numbering prefix + sequence, default terms/VAT/validity, branding, notification address and email template — per sales channel.'),
+            ('Per-channel everything', 'Numbering prefix + sequence, default terms/VAT/validity, notification address and email template per sales channel — with full brand chrome on every email and quote page: logo, accent colour, website, phone, address and a company/VAT footer note.'),
         ],
         'endpoints': [
             ('GET',  '/quotations/quote/:token',      'Public: the customer quote page (signed link)'),
@@ -513,7 +513,7 @@ HEADER = '''<!DOCTYPE html>
 <title>{title}</title>
 <meta name="description" content="{description}">
 <link rel="canonical" href="{canonical}">
-<link rel="icon" type="image/svg+xml" href="/vendure-plugins/logos/hulo-global.svg?v=1">
+<link rel="icon" type="image/svg+xml" href="/vendure-plugins/logos/hulo-global.svg?v=2">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Hulo Global">
 <meta property="og:title" content="{title}">
@@ -1187,9 +1187,9 @@ export const config: VendureConfig = {{
 <a href="/vendure-plugins/" class="vp-brand" aria-label="Hulo Global home">
 <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
 <rect width="64" height="64" rx="14" fill="#0f1419"/>
-<path d="M14 16 h5 v13 h11 v-13 h5 v32 h-5 v-14 h-11 v14 h-5 z" fill="#ffffff"/>
-<path d="M50 24 A11 11 0 1 0 50 42 L50 34 L44 34 L44 30" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="50" cy="33" r="2.5" fill="#f59e0b"/>
+<path d="M7.5 17.5 h5 v12 h8 v-12 h5 v29 h-5 v-12.5 h-8 v12.5 h-5 z" fill="#ffffff"/>
+<path d="M50.5 22 A12.25 12.25 0 1 0 50.5 42 L50.5 33.1 L43.9 33.1 L43.9 28.7" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="50.5" cy="32" r="2.6" fill="#f59e0b"/>
 </svg>
 <span class="vp-brand-txt">Hulo Global</span>
 </a>
