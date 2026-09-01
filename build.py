@@ -192,6 +192,50 @@ def common_endpoints(slug: str):
 
 PLUGINS = [
     {
+        'slug': 'quotations',
+        'pkg': '@huloglobal/vendure-plugin-quotations',
+        'class': 'QuotationsPlugin',
+        'version': '0.1.0',
+        'title': 'Quotations',
+        'tagline': 'End-to-end quotation engine — build quotes from your catalogue, email a signed accept/decline link, chase automatically, convert wins to draft orders at the exact quoted total.',
+        'description': (
+            'Everything a B2B-ish shop needs to quote like a pro. Build quotes in the '
+            'admin from your live catalogue (or free-text lines) with per-line and '
+            'quote-level discounts, VAT and a validity date. One click emails the '
+            'customer a branded quote page where they accept with a typed-name '
+            'signature — or decline with a reason — and every step lands in a '
+            'per-quote audit trail. Unopened quotes get one polite chaser, '
+            'expiring quotes a heads-up, and overdue ones expire themselves. '
+            'Accepted quotes convert to a Vendure draft order whose total equals '
+            'the quote to the penny — a pricing surcharge reconciles quoted vs '
+            'catalogue pricing, so custom deals never fight your price lists.'
+        ),
+        'features': [
+            ('Quote builder with live catalogue search', 'Type a product name or SKU and the line lands with the current channel price pre-filled. Free-text lines for services, delivery or anything off-catalogue. Per-line quantity, unit price override, and percentage discount with live totals.'),
+            ('Discounts, VAT and validity done properly', 'Quote-level discount (percent or fixed) applied before VAT; configurable VAT rate per quote (zero-rate for exports); a validity date after which the quote expires itself. All money handled in integer pence.'),
+            ('Branded customer quote page', 'A signed, unguessable link opens a clean quote page in your colours with your logo: line items, totals, notes, terms — plus print/save-as-PDF. No customer account needed.'),
+            ('Accept with a signature', 'The customer types their full name to accept — recorded with a timestamp as their signature, alongside an optional comment. Declines capture a reason. You get an email either way.'),
+            ('Viewed / accepted / declined tracking', 'The first open flips the quote to viewed with a timestamp. Every event — created, sent, viewed, chased, accepted, declined, expired, converted — is in the per-quote activity log.'),
+            ('Automatic follow-ups', 'One chaser for unopened quotes after N days, an expires-soon reminder before the validity date, and automatic expiry after it. All per-channel configurable, all logged, none sent twice.'),
+            ('Convert to order at the quoted price', 'Accepted quotes become Vendure draft orders: catalogue lines are added as real order lines and a single "Quotation pricing" surcharge reconciles any difference — the draft total equals the quote total exactly.'),
+            ('Revisions & duplicates', 'Sent quotes are immutable once decided; duplicate any quote as a fresh draft (linked as a revision) when the deal changes shape.'),
+            ('Pipeline KPIs', 'Win rate and sends over 30 days, open pipeline value, and average send-to-decision time — on the dashboard where you quote.'),
+            ('Per-channel everything', 'Numbering prefix + sequence, default terms/VAT/validity, branding, notification address and email template — per sales channel.'),
+        ],
+        'endpoints': [
+            ('GET',  '/quotations/quote/:token',      'Public: the customer quote page (signed link)'),
+            ('POST', '/quotations/quote/:token',      'Public: accept (typed signature) or decline'),
+            ('GET',  '/quotations/quotes',            'Admin: list + filter + search'),
+            ('POST', '/quotations/quotes',            'Admin: create a quote'),
+            ('PUT',  '/quotations/quotes/:id',        'Admin: update a draft/open quote'),
+            ('POST', '/quotations/quotes/:id/send',   'Admin: email the customer (licensed)'),
+            ('POST', '/quotations/quotes/:id/convert','Admin: accepted quote → draft order (licensed)'),
+            ('POST', '/quotations/quotes/:id/duplicate', 'Admin: duplicate / revise'),
+            ('GET',  '/quotations/stats',             'Admin: win rate + pipeline KPIs'),
+            ('GET',  '/quotations/variants/search',   'Admin: catalogue search for the editor'),
+        ],
+    },
+    {
         'slug': 'email-tracking',
         'pkg': '@huloglobal/vendure-plugin-email-tracking',
         'class': 'EmailTrackingPlugin',
@@ -847,6 +891,12 @@ TICK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="
 
 def index_page():
     short_features = {
+        'quotations': [
+            'Quote builder with live catalogue prices',
+            'Signed accept/decline link with typed-name signature',
+            'Auto-chasers, expiry reminders + auto-expiry',
+            'Accepted quote → draft order at the exact quoted total',
+        ],
         'email-tracking': [
             'Per-link tokenised open + click tracking',
             'Human / machine event classification (Gmail proxy, Safe Links, …)',
@@ -896,16 +946,16 @@ def index_page():
 </article>''')
 
     comparison_rows = [
-        ['Drop-in install (one yarn add)', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Channel-aware', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Admin UI included', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['MySQL / MariaDB / PostgreSQL', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Licence activation in the admin', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['One-click in-app updates', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Database tables', '2', '1', '2', '8', '5'],
-        ['Privacy controls', 'IP hash', 'IP allowlist', 'DNT, IP anonymisation, consent gate', 'Allowlist bypass', 'Opt-out + exclusions'],
-        ['Offline licence verification', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Self-hosted (no calls to us at runtime)', 'yes', 'yes', 'yes', 'yes-note', 'yes-note'],
+        ['Drop-in install (one yarn add)', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Channel-aware', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Admin UI included', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['MySQL / MariaDB / PostgreSQL', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Licence activation in the admin', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['One-click in-app updates', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Database tables', '4', '2', '1', '2', '8', '5'],
+        ['Privacy controls', 'Signed links, no tracking pixels', 'IP hash', 'IP allowlist', 'DNT, IP anonymisation, consent gate', 'Allowlist bypass', 'Opt-out + exclusions'],
+        ['Offline licence verification', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Self-hosted (no calls to us at runtime)', 'yes', 'yes', 'yes', 'yes', 'yes-note', 'yes-note'],
     ]
     def fmt_cell(c, plain=False):
         if c == 'yes': return '<span class="text-accent-600 font-bold">✓</span>' if not plain else '✓'

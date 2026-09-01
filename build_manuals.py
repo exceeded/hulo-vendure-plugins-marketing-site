@@ -970,6 +970,78 @@ def wrap_tables(html_str):
         flags=re.DOTALL,
     )
 
+
+# ─────────────────────────────────────────────────────────────────────────
+# Quotations
+# ─────────────────────────────────────────────────────────────────────────
+
+QUOTATIONS_MANUAL = {
+    'slug': 'quotations',
+    'title_short': 'Quotations',
+    'sections': [
+        ('overview', 'Overview', '''
+<p><strong>Quotations</strong> is an end-to-end quotation engine for Vendure. The full lifecycle lives in your admin: build a quote from the live catalogue (or free-text lines), email the customer a branded page with a signed link, watch it move through <code>sent → viewed → accepted / declined</code>, chase automatically, and convert wins to draft orders at the exact quoted total.</p>
+<ul>
+<li><strong>Statuses:</strong> draft → sent → viewed → accepted / declined / expired / cancelled → converted.</li>
+<li><strong>Money:</strong> integer minor units throughout; per-line % discount, quote-level % or fixed discount (applied before VAT), configurable VAT rate per quote.</li>
+<li><strong>Audit:</strong> every step (including chasers and customer opens) is an event on the quote.</li>
+</ul>
+'''),
+        ('install', 'Install & configure', '''
+<p>Install and register the plugin:</p>
+<pre><code>yarn add @huloglobal/vendure-plugin-quotations</code></pre>
+<pre><code>import { QuotationsPlugin } from '@huloglobal/vendure-plugin-quotations';
+
+plugins: [
+  QuotationsPlugin.init({
+    publicBaseUrl: 'https://shop.example.com',   // used for customer quote links
+    licenceKey: process.env.HULO_LICENCE_KEY_QUOTATIONS,  // optional — or activate in the admin
+  }),
+]</code></pre>
+<p>Add <code>QuotationsPlugin.uiExtensions</code> to your admin-ui <code>compileUiExtensions</code> extensions list and rebuild the admin. Tables are created automatically on boot (MySQL, MariaDB and PostgreSQL).</p>
+<p>Emails send via SMTP from <code>SMTP_SERVER / SMTP_PORT / SMTP_USER / SMTP_PASSWORD / SMTP_FROM</code>, or pass <code>smtp</code> in <code>init()</code>.</p>
+<p>In the admin <em>Quotations → Settings</em>, set your business name, logo URL, accent colour, notification address, numbering prefix, default validity/VAT/terms, and the chaser/expiry-reminder cadence — per channel.</p>
+'''),
+        ('workflow', 'The quoting workflow', '''
+<ol>
+<li><strong>Build:</strong> New quote → search the catalogue by name/SKU (price pre-fills) or add custom lines. Set quantities, unit-price overrides and per-line discounts; add a quote-level discount, VAT rate, validity and notes/terms. Totals preview live.</li>
+<li><strong>Send:</strong> "Save &amp; send" emails the customer a branded message with the signed quote link. Re-send any time; the link is stable.</li>
+<li><strong>Track:</strong> the first open flips the quote to <em>viewed</em>. The customer accepts by typing their full name (recorded as a signature with a timestamp) or declines with a reason — you're notified by email either way.</li>
+<li><strong>Chase:</strong> the hourly worker sends one reminder for unopened quotes after N days, an expires-soon nudge before the validity date, and expires overdue quotes automatically.</li>
+<li><strong>Convert:</strong> on an accepted quote, "Convert to order" creates a Vendure <em>draft order</em>: catalogue lines become real order lines and one "Quotation pricing" surcharge reconciles any difference, so the draft total equals the quote exactly. Complete the draft in Orders as usual.</li>
+</ol>
+<p>Sent quotes that have been decided are immutable — use <em>Duplicate</em> to spin a linked revision when the deal changes.</p>
+'''),
+        ('endpoints', 'HTTP endpoints', '''
+<table>
+<tr><th>Method</th><th>Path</th><th>Purpose</th></tr>
+<tr><td>GET</td><td><code>/quotations/quote/:token</code></td><td>Public customer quote page (signed link; marks viewed)</td></tr>
+<tr><td>POST</td><td><code>/quotations/quote/:token</code></td><td>Public accept (typed signature) / decline</td></tr>
+<tr><td>GET/POST</td><td><code>/quotations/quotes</code></td><td>Admin: list / create</td></tr>
+<tr><td>PUT/DELETE</td><td><code>/quotations/quotes/:id</code></td><td>Admin: update draft/open · delete draft</td></tr>
+<tr><td>POST</td><td><code>/quotations/quotes/:id/send</code></td><td>Admin: email the customer (licensed)</td></tr>
+<tr><td>POST</td><td><code>/quotations/quotes/:id/convert</code></td><td>Admin: accepted quote → draft order (licensed)</td></tr>
+<tr><td>POST</td><td><code>/quotations/quotes/:id/duplicate</code></td><td>Admin: duplicate / revise</td></tr>
+<tr><td>POST</td><td><code>/quotations/quotes/:id/cancel</code></td><td>Admin: withdraw an open quote</td></tr>
+<tr><td>GET</td><td><code>/quotations/stats</code></td><td>Admin: win rate, open pipeline, response time</td></tr>
+<tr><td>GET</td><td><code>/quotations/variants/search</code></td><td>Admin: catalogue search for the editor</td></tr>
+</table>
+'''),
+        ('licensing', 'Licensing & tiers', '''
+<p>Every install starts a <strong>14-day fully-featured evaluation</strong>. Afterwards the plugin drops to the free tier: drafting, pricing and previewing quotes stay free — <strong>sending, chasers and order conversion require a licence</strong>. Paste your key into the admin (Activate) or set <code>HULO_LICENCE_KEY_QUOTATIONS</code>; the env key wins when both are present. Buy at <a href="/vendure-plugins/quotations/">huloglobal.com/vendure-plugins/quotations</a> — monthly with a 7-day free trial, annual (two months free), or lifetime.</p>
+'''),
+        ('troubleshooting', 'Troubleshooting', '''
+<ul>
+<li><strong>Emails not sending:</strong> check the SMTP env vars; the send response surfaces the SMTP error verbatim in the admin notification.</li>
+<li><strong>Customer link 404s:</strong> draft quotes have no public page — send the quote first. Withdrawn (cancelled) quotes deliberately stop resolving.</li>
+<li><strong>Convert fails on a line:</strong> the referenced variant must still be enabled and in the channel; the error names the offending line. Free-text-only quotes convert as a single surcharge.</li>
+<li><strong>Chasers not going out:</strong> they run on the <em>worker</em> process, hourly, licensed installs only, and each quote gets at most one chaser.</li>
+</ul>
+'''),
+    ],
+}
+
+
 def render_manual(m):
     canonical = f'https://huloglobal.com/vendure-plugins/{m["slug"]}/docs/'
     head = DOC_HEAD.format(
@@ -997,7 +1069,7 @@ def render_manual(m):
 
 
 def main():
-    for m in (EMAIL_TRACKING_MANUAL, GEO_BLOCK_MANUAL, VISITOR_ANALYTICS_MANUAL, FRAUD_PREVENTION_MANUAL, REVIEW_REQUESTS_MANUAL):
+    for m in (QUOTATIONS_MANUAL, EMAIL_TRACKING_MANUAL, GEO_BLOCK_MANUAL, VISITOR_ANALYTICS_MANUAL, FRAUD_PREVENTION_MANUAL, REVIEW_REQUESTS_MANUAL):
         d = OUT / m['slug'] / 'docs'
         d.mkdir(parents=True, exist_ok=True)
         (d / 'index.html').write_text(render_manual(m), encoding='utf-8')

@@ -82,6 +82,8 @@ for url in \
     "https://huloglobal.com/vendure-plugins/visitor-analytics/docs/" \
     "https://huloglobal.com/vendure-plugins/fraud-prevention/" \
     "https://huloglobal.com/vendure-plugins/roadmap/" \
+    "https://huloglobal.com/vendure-plugins/quotations/" \
+    "https://huloglobal.com/vendure-plugins/quotations/changelog/" \
     "https://huloglobal.com/vendure-plugins/email-tracking/changelog/" \
     "https://huloglobal.com/vendure-plugins/fraud-prevention/changelog/" \
     "https://huloglobal.com/vendure-plugins/review-requests/changelog/" \
