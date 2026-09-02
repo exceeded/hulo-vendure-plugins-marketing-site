@@ -891,7 +891,7 @@ if (held.has(orderId)) continue; <span class="c">// wait for a human</span></div
 '''),
         ('licensing', 'Licensing', '''
 <p>Without a licence key the plugin runs in the <strong>free tier</strong>: monitor mode, manual lists and the simulator — full scoring visibility, no enforcement. A licence enables enforce mode (review queue + fulfilment holds), threat-feed sync and email alerts.</p>
-<p>Licences are JWTs bought from the <a href="/vendure-plugins/fraud-prevention/">plugin page</a> — monthly with a 7-day free trial, annual (two months free), or lifetime. Easiest: paste the key into the plugin's admin settings (<em>Activate</em>) — no redeploy. For config-as-code, set it as <code>HULO_LICENCE_KEY_FRAUD_PREVENTION</code> and pass it to <code>init()</code>; an env key takes precedence over an admin-stored one.</p>
+<p>Licences are JWTs bought from the <a href="/vendure-plugins/fraud-prevention/">plugin page</a> — monthly, annual (two months free), or lifetime. Easiest: click <em>Buy licence</em> on the plugin's admin banner — checkout opens in a new tab and the key installs itself within a minute (renewals too). Already have a key? Paste it into the same banner (<em>Activate</em>) — no redeploy. For config-as-code, set it as <code>HULO_LICENCE_KEY_FRAUD_PREVENTION</code> and pass it to <code>init()</code>; an env key takes precedence over an admin-stored one.</p>
 '''),
     ],
 }
@@ -954,7 +954,7 @@ ReviewRequestPlugin.uiExtensions</div>
 <p><strong>Product reviews.</strong> Under <em>What to ask for</em> in Settings, choose Store review, Product reviews, or Both. In product (or both) mode the email lists the actual products from the customer's order, each with its own "Review this" button linking to your storefront's product-review page — set the link template (with <code>{slug}</code>, <code>{name}</code>, <code>{orderCode}</code>) in Settings. Two extra template variables, <code>{{reviewButton}}</code> and <code>{{productList}}</code>, control where the store button and the product list appear.</p>
 '''),
         ('licensing', 'Licensing', '''
-<p>Free tier: configure, preview and test-send. <strong>Scheduled sending requires a licence</strong> from the <a href="/vendure-plugins/review-requests/">plugin page</a> — monthly with a 7-day free trial, annual (two months free), or lifetime. Easiest: paste the key into the plugin's admin settings (<em>Activate</em>) — no redeploy. For config-as-code, set it as <code>HULO_LICENCE_KEY_REVIEW_REQUESTS</code>; the env key wins when both are present.</p>
+<p>Free tier: configure, preview and test-send. <strong>Scheduled sending requires a licence</strong> from the <a href="/vendure-plugins/review-requests/">plugin page</a> — monthly, annual (two months free), or lifetime. Easiest: click <em>Buy licence</em> on the plugin's admin banner — checkout opens in a new tab and the key installs itself within a minute (renewals too). Already have a key? Paste it into the same banner (<em>Activate</em>) — no redeploy. For config-as-code, set it as <code>HULO_LICENCE_KEY_REVIEW_REQUESTS</code>; the env key wins when both are present.</p>
 '''),
     ],
 }
@@ -1028,7 +1028,7 @@ plugins: [
 </table>
 '''),
         ('licensing', 'Licensing & tiers', '''
-<p>Every install starts a <strong>14-day fully-featured evaluation</strong>. Afterwards the plugin drops to the free tier: drafting, pricing and previewing quotes stay free — <strong>sending, chasers and order conversion require a licence</strong>. Paste your key into the admin (Activate) or set <code>HULO_LICENCE_KEY_QUOTATIONS</code>; the env key wins when both are present. Buy at <a href="/vendure-plugins/quotations/">huloglobal.com/vendure-plugins/quotations</a> — monthly with a 7-day free trial, annual (two months free), or lifetime.</p>
+<p>Every install starts a <strong>14-day fully-featured evaluation</strong>. Afterwards the plugin drops to the free tier: drafting, pricing and previewing quotes stay free — <strong>sending, chasers and order conversion require a licence</strong>. Paste your key into the admin (Activate) or set <code>HULO_LICENCE_KEY_QUOTATIONS</code>; the env key wins when both are present. Buy at <a href="/vendure-plugins/quotations/">huloglobal.com/vendure-plugins/quotations</a> — monthly, annual (two months free), or lifetime.</p>
 '''),
         ('troubleshooting', 'Troubleshooting', '''
 <ul>

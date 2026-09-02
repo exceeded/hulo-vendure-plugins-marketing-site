@@ -168,7 +168,7 @@ def ccy_picker_html(select_id: str, mobile: bool = False) -> str:
 # one place.
 COMMON_FEATURES = [
     ('MySQL, MariaDB & PostgreSQL', 'The plugin follows whatever database your Vendure `dbConnectionOptions` use — no configuration. Verified against PostgreSQL 17; MySQL/MariaDB installs are unchanged.'),
-    ('Licence activation in the admin', 'Paste your licence key straight into the plugin\'s admin settings — it\'s verified and stored server-side, no `.env` edit, no redeploy. Environment keys still take precedence for infrastructure-as-code setups.'),
+    ('Buy &amp; activate from the admin', 'Click <strong>Buy licence</strong> in the plugin\'s admin banner — checkout opens in a new tab and the key installs itself within a minute, renewals included. Already have a key? Paste it into the same banner. No `.env` edit, no redeploy; environment keys still take precedence for infrastructure-as-code setups.'),
     ('One-click in-app updates', 'When a new version ships, an update banner shows current → latest with a What\'s-new link to the changelog. "Update now" installs the registry-verified release via your project\'s own package manager (yarn/npm/pnpm auto-detected) and gracefully restarts under pm2/systemd. Disable with `HULO_SELF_UPDATE=off`.'),
 ]
 
@@ -1061,8 +1061,8 @@ def index_page():
         )
 
     faqs = [
-        ('How are the plugins licensed?', 'Each plugin is licensed individually. Every install starts with a <strong>14-day fully-featured evaluation</strong> — no card needed. After that, a monthly subscription (from £2.95 to £14.95/mo depending on the plugin, with 7 days free before the first charge, cancel any time), an annual plan (two months free), or a one-off lifetime licence (£59–£299, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
-        ('How does the free trial work?', 'Pick the monthly plan and enter your email. We collect a payment method via Stripe but don\'t charge for 7 days — and we\'ll send a reminder email 2 days before the trial ends so you can cancel if you change your mind. Trials are limited to one per customer; we detect repeat attempts by the card fingerprint, not just the email.'),
+        ('How are the plugins licensed?', 'Each plugin is licensed individually. Every install starts with a <strong>14-day fully-featured evaluation</strong> — no card needed. After that, a monthly subscription (from £2.95 to £14.95/mo depending on the plugin, cancel any time), an annual plan (two months free), or a one-off lifetime licence (£59–£299, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
+        ('How do I buy and activate a licence?', 'Open the plugin\'s page in your Vendure admin, pick a plan on the evaluation banner and click <strong>Buy licence</strong>. Stripe Checkout opens in a new tab; within a minute of payment the licence installs itself in the admin — no email round-trip, no <code>.env</code> edit, no restart. Renewed subscription keys are picked up automatically. Prefer to buy on the web? Use the plugin\'s buy page and paste the emailed key into the admin instead.'),
         ('How do I manage / cancel my subscription?', 'Every receipt email includes a Stripe Customer Portal link — click it to update your payment method, see invoices, or cancel. No need to email us. Lifetime customers have nothing to manage; reply to your receipt if you need a VAT invoice.'),
         ('I lost my licence key — what now?', 'Re-send every active key on file at <a class="underline underline-offset-2" href="https://elite.charity/licence/forgot">elite.charity/licence/forgot</a>. We always show the same confirmation regardless of whether the email is on file (anti-enumeration), so check spam if nothing arrives. Limited to 5 requests per email per day.'),
         ('Can I export or delete my data?', 'Yes — under UK GDPR you have a right to see, export and erase the personal data we hold. Visit <a class="underline underline-offset-2" href="https://elite.charity/licence/privacy">elite.charity/licence/privacy</a> and we\'ll email you a magic link to do both.'),
@@ -1260,10 +1260,10 @@ export const config: VendureConfig = {{
 {pricing_override_js}
 <aside class="vp-pricing-aside">
 <div class="vp-price-card">
-<p class="text-xs uppercase tracking-wider text-accent-600 font-semibold">Monthly · 7 days free</p>
+<p class="text-xs uppercase tracking-wider text-accent-600 font-semibold">Monthly</p>
 <p class="vp-price-num mt-2"><span class="vp-trial-num">7</span><small>days free</small></p>
 <p class="mt-2 text-sm text-ink-700">Then <span data-monthly-price>{price_mo_gbp}</span>/month. Cancel anytime before day 8 and pay nothing.</p>
-<a href="{BUY_BASE}/{pkg_short}?plan=monthly" class="btn btn-secondary w-full mt-5" style="text-align:center">Start 7-day free trial →</a>
+<a href="{BUY_BASE}/{pkg_short}?plan=monthly" class="btn btn-secondary w-full mt-5" style="text-align:center">Subscribe monthly →</a>
 <p class="vp-tiny-note">Card required. One trial per customer.</p>
 </div>
 <div class="vp-price-card featured">
