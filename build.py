@@ -168,7 +168,7 @@ def ccy_picker_html(select_id: str, mobile: bool = False) -> str:
 # one place.
 COMMON_FEATURES = [
     ('MySQL, MariaDB & PostgreSQL', 'The plugin follows whatever database your Vendure `dbConnectionOptions` use — no configuration. Verified against PostgreSQL 17; MySQL/MariaDB installs are unchanged.'),
-    ('Buy &amp; activate from the admin', 'Click <strong>Buy licence</strong> in the plugin\'s admin banner — checkout opens in a new tab and the key installs itself within a minute, renewals included. Already have a key? Paste it into the same banner. No `.env` edit, no redeploy; environment keys still take precedence for infrastructure-as-code setups.'),
+    ('Buy &amp; activate from the admin', 'Start the 14-day free trial (or buy) from the plugin\'s admin banner — checkout opens in a new tab and the key installs itself within a minute, renewals included. Already have a key? Paste it into the same banner. No `.env` edit, no redeploy; environment keys still take precedence for infrastructure-as-code setups.'),
     ('One-click in-app updates', 'When a new version ships, an update banner shows current → latest with a What\'s-new link to the changelog. "Update now" installs the registry-verified release via your project\'s own package manager (yarn/npm/pnpm auto-detected) and gracefully restarts under pm2/systemd. Disable with `HULO_SELF_UPDATE=off`.'),
 ]
 
@@ -1061,14 +1061,14 @@ def index_page():
         )
 
     faqs = [
-        ('How are the plugins licensed?', 'Each plugin is licensed individually. Every install starts with a <strong>14-day fully-featured evaluation</strong> — no card needed. After that, a monthly subscription (from £2.95 to £14.95/mo depending on the plugin, cancel any time), an annual plan (two months free), or a one-off lifetime licence (£59–£299, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
-        ('How do I buy and activate a licence?', 'Open the plugin\'s page in your Vendure admin, pick a plan on the evaluation banner and click <strong>Buy licence</strong>. Stripe Checkout opens in a new tab; within a minute of payment the licence installs itself in the admin — no email round-trip, no <code>.env</code> edit, no restart. Renewed subscription keys are picked up automatically. Prefer to buy on the web? Use the plugin\'s buy page and paste the emailed key into the admin instead.'),
+        ('How are the plugins licensed?', 'Each plugin is licensed individually. Start a <strong>14-day free trial</strong> from the plugin\'s admin page — card required, nothing charged until day 15, cancel any time — which continues as a monthly (£2.95–£14.95/mo) or annual (two months free) subscription. Or buy a one-off lifetime licence (£59–£299, never expires, 12 months of updates included). Every option gives you a JWT licence key that installs itself in the admin.'),
+        ('How do I buy and activate a licence?', 'Open the plugin\'s page in your Vendure admin, pick monthly or annual on the licence banner and click <strong>Start 14-day free trial</strong> (or choose lifetime and click <strong>Buy lifetime</strong>). Stripe Checkout opens in a new tab; within a minute of payment the licence installs itself in the admin — no email round-trip, no <code>.env</code> edit, no restart. Renewed subscription keys are picked up automatically. Prefer to buy on the web? Use the plugin\'s buy page and paste the emailed key into the admin instead.'),
         ('How do I manage / cancel my subscription?', 'Every receipt email includes a Stripe Customer Portal link — click it to update your payment method, see invoices, or cancel. No need to email us. Lifetime customers have nothing to manage; reply to your receipt if you need a VAT invoice.'),
         ('I lost my licence key — what now?', 'Re-send every active key on file at <a class="underline underline-offset-2" href="https://elite.charity/licence/forgot">elite.charity/licence/forgot</a>. We always show the same confirmation regardless of whether the email is on file (anti-enumeration), so check spam if nothing arrives. Limited to 5 requests per email per day.'),
         ('Can I export or delete my data?', 'Yes — under UK GDPR you have a right to see, export and erase the personal data we hold. Visit <a class="underline underline-offset-2" href="https://elite.charity/licence/privacy">elite.charity/licence/privacy</a> and we\'ll email you a magic link to do both.'),
         ('Do the plugins call home?', 'No — licence verification is offline. Each plugin verifies the JWT at boot against an embedded public key. A revocation list is polled once a week (cached, soft-fail), so a brief outage at our end never disables your store. Nothing else leaves your server.'),
         ('Where does customer data live?', 'On your Vendure server — same DB as the rest of your data. No third-party analytics provider. The visitor-analytics plugin\'s ingest endpoint is on your domain.'),
-        ('What if I don\'t buy a licence?', 'Plugins still boot in a degraded "evaluation" mode — install, configure, browse data, and the admin UI is functional. The public storefront endpoints are limited (geo-block always reports `enabled:false`; visitor-analytics dashboards return 403). Buy a key when you\'re ready.'),
+        ('What if I don\'t buy a licence?', 'Plugins still boot in a free tier — install, configure, browse data, and the admin UI is functional. The public storefront endpoints are limited (geo-block always reports `enabled:false`; visitor-analytics dashboards return 403). Buy a key when you\'re ready.'),
         ('Can I see the source?', 'Yes — all five are on GitHub under <a class="underline underline-offset-2" href="https://github.com/exceeded">github.com/exceeded</a>. MIT-style licence on the code itself, separate paid licence for production use.'),
         ('Do they work on Vendure 2.x?', 'They target Vendure 3.x (3.0+). Vendure 2.x isn\'t supported because we use some of the 3.x customField improvements.'),
     ]
@@ -1205,7 +1205,7 @@ export const config: VendureConfig = {{
         ('How do I get a licence key?',
          f'<a class="underline underline-offset-2" href="{BUY_BASE}/{pkg_short}">Buy here</a> — Stripe Checkout — monthly, annual (two months free) or lifetime. You\'ll receive the JWT key by email. Paste it into the plugin\'s admin settings (Activate) — no redeploy — or set it as <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">{env_var_name}</code> in your <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">.env</code> if you prefer config-as-code; the env key wins when both are present.'),
         ('Does it work without a key?',
-         'Yes — every install starts a 14-day, fully-featured evaluation: configure it, use every premium feature, and see what it does with your real traffic. After the window it degrades gracefully (core recording keeps working, premium actions pause) until a key is activated.'),
+         'Yes — every subscription starts with a 14-day free trial. Install the plugin, open its admin page and click <strong>Start 14-day free trial</strong>: a card is required, nothing is charged until day 15, and you can cancel any time before then. The licence installs itself and every premium feature is on for the whole trial with your real traffic.'),
         ('Which databases are supported?',
          'MySQL, MariaDB and PostgreSQL (verified against PostgreSQL 17). The plugin follows your Vendure <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">dbConnectionOptions</code> automatically — there is nothing to configure.'),
         ('How do updates work?',
@@ -1260,10 +1260,10 @@ export const config: VendureConfig = {{
 {pricing_override_js}
 <aside class="vp-pricing-aside">
 <div class="vp-price-card">
-<p class="text-xs uppercase tracking-wider text-accent-600 font-semibold">Monthly</p>
+<p class="text-xs uppercase tracking-wider text-accent-600 font-semibold">Monthly · 14-day free trial</p>
 <p class="vp-price-num mt-2"><span class="vp-trial-num">7</span><small>days free</small></p>
 <p class="mt-2 text-sm text-ink-700">Then <span data-monthly-price>{price_mo_gbp}</span>/month. Cancel anytime before day 8 and pay nothing.</p>
-<a href="{BUY_BASE}/{pkg_short}?plan=monthly" class="btn btn-secondary w-full mt-5" style="text-align:center">Subscribe monthly →</a>
+<a href="{BUY_BASE}/{pkg_short}?plan=monthly" class="btn btn-secondary w-full mt-5" style="text-align:center">Start 14-day free trial →</a>
 <p class="vp-tiny-note">Card required. One trial per customer.</p>
 </div>
 <div class="vp-price-card featured">
@@ -1306,7 +1306,7 @@ yarn migration:run</div>
 </div>
 
 <div class="mt-10 rounded-lg border border-ink-200 bg-white p-6">
-<p class="text-sm text-ink-700"><strong>That's it.</strong> The admin UI tab appears immediately. Without a licence key the plugin runs in a degraded evaluation mode — fine for trying things out. <a href="{BUY_BASE}/{pkg_short}" class="text-accent-600 underline underline-offset-2">Buy a key →</a></p>
+<p class="text-sm text-ink-700"><strong>That's it.</strong> The admin UI tab appears immediately. Without a licence key the plugin runs in a free tier — fine for trying things out. <a href="{BUY_BASE}/{pkg_short}" class="text-accent-600 underline underline-offset-2">Buy a key →</a></p>
 </div>
 </div>
 </section>
