@@ -549,7 +549,7 @@ HEADER = '''<!DOCTYPE html>
 <title>{title}</title>
 <meta name="description" content="{description}">
 <link rel="canonical" href="{canonical}">
-<link rel="icon" type="image/svg+xml" href="/vendure-plugins/logos/hulo-global.svg?v=2">
+<link rel="icon" type="image/svg+xml" href="/vendure-plugins/logos/hulo-global.svg?v=3">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Hulo Global">
 <meta property="og:title" content="{title}">
@@ -1223,9 +1223,7 @@ export const config: VendureConfig = {{
 <a href="/vendure-plugins/" class="vp-brand" aria-label="Hulo Global home">
 <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
 <rect width="64" height="64" rx="14" fill="#0f1419"/>
-<path d="M7.5 17.5 h5 v12 h8 v-12 h5 v29 h-5 v-12.5 h-8 v12.5 h-5 z" fill="#ffffff"/>
-<path d="M50.5 22 A12.25 12.25 0 1 0 50.5 42 L50.5 33.1 L43.9 33.1 L43.9 28.7" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="50.5" cy="32" r="2.6" fill="#f59e0b"/>
+<path d="M23.10 45.50V33.93H11.34V45.50H5.68V18.50H11.34V29.25H23.10V18.50H28.76V45.50Z M45.67 41.46Q47.87 41.46 49.94 40.81Q52.01 40.17 53.14 39.18V35.44H46.55V31.26H58.32V41.19Q56.17 43.39 52.73 44.64Q49.29 45.88 45.51 45.88Q38.92 45.88 35.38 42.23Q31.83 38.58 31.83 31.88Q31.83 25.21 35.40 21.65Q38.96 18.10 45.65 18.10Q55.15 18.10 57.74 25.13L52.53 26.70Q51.69 24.65 49.88 23.60Q48.08 22.54 45.65 22.54Q41.66 22.54 39.59 24.96Q37.52 27.37 37.52 31.88Q37.52 36.46 39.66 38.96Q41.80 41.46 45.67 41.46Z" fill="#ffffff"/>
 </svg>
 <span class="vp-brand-txt">Hulo Global</span>
 </a>
