@@ -194,6 +194,15 @@ PLUGINS = [
     {
         'slug': 'quotations',
         'pkg': '@huloglobal/vendure-plugin-quotations',
+        # Real per-currency prices — must match the currency_options on the
+        # Stripe price objects (repriced 2026-09-02 by functionality tier).
+        'pricing': {
+            'GBP': {'monthly': '£14.95', 'lifetime': '£299', 'symbol': '£', 'label': 'GBP — British pound'},
+            'USD': {'monthly': '$19.95', 'lifetime': '$399', 'symbol': '$', 'label': 'USD — US dollar'},
+            'EUR': {'monthly': '€17.95', 'lifetime': '€359', 'symbol': '€', 'label': 'EUR — Euro'},
+            'AUD': {'monthly': 'A$29.95', 'lifetime': 'A$599', 'symbol': 'A$', 'label': 'AUD — Australian dollar'},
+            'CAD': {'monthly': 'C$26.95', 'lifetime': 'C$539', 'symbol': 'C$', 'label': 'CAD — Canadian dollar'},
+        },
         'class': 'QuotationsPlugin',
         'version': '0.1.0',
         'title': 'Quotations',
@@ -241,6 +250,15 @@ PLUGINS = [
     {
         'slug': 'email-tracking',
         'pkg': '@huloglobal/vendure-plugin-email-tracking',
+        # Real per-currency prices — must match the currency_options on the
+        # Stripe price objects (repriced 2026-09-02 by functionality tier).
+        'pricing': {
+            'GBP': {'monthly': '£6.95', 'lifetime': '£139', 'symbol': '£', 'label': 'GBP — British pound'},
+            'USD': {'monthly': '$8.99', 'lifetime': '$179', 'symbol': '$', 'label': 'USD — US dollar'},
+            'EUR': {'monthly': '€8.49', 'lifetime': '€169', 'symbol': '€', 'label': 'EUR — Euro'},
+            'AUD': {'monthly': 'A$13.95', 'lifetime': 'A$279', 'symbol': 'A$', 'label': 'AUD — Australian dollar'},
+            'CAD': {'monthly': 'C$12.95', 'lifetime': 'C$259', 'symbol': 'C$', 'label': 'CAD — Canadian dollar'},
+        },
         'class': 'EmailTrackingPlugin',
         'version': '0.8.2',
         'title': 'Email Tracking',
@@ -298,6 +316,15 @@ PLUGINS = [
     {
         'slug': 'geo-block',
         'pkg': '@huloglobal/vendure-plugin-geo-block',
+        # Real per-currency prices — must match the currency_options on the
+        # Stripe price objects (repriced 2026-09-02 by functionality tier).
+        'pricing': {
+            'GBP': {'monthly': '£4.95', 'lifetime': '£99', 'symbol': '£', 'label': 'GBP — British pound'},
+            'USD': {'monthly': '$6.49', 'lifetime': '$129', 'symbol': '$', 'label': 'USD — US dollar'},
+            'EUR': {'monthly': '€5.95', 'lifetime': '€119', 'symbol': '€', 'label': 'EUR — Euro'},
+            'AUD': {'monthly': 'A$9.95', 'lifetime': 'A$199', 'symbol': 'A$', 'label': 'AUD — Australian dollar'},
+            'CAD': {'monthly': 'C$8.95', 'lifetime': 'C$179', 'symbol': 'C$', 'label': 'CAD — Canadian dollar'},
+        },
         'class': 'GeoBlockPlugin',
         'version': '0.6.0',
         'title': 'Geo Block',
@@ -399,6 +426,15 @@ PLUGINS = [
     {
         'slug': 'fraud-prevention',
         'pkg': '@huloglobal/vendure-plugin-fraud-prevention',
+        # Real per-currency prices — must match the currency_options on the
+        # Stripe price objects (repriced 2026-09-02 by functionality tier).
+        'pricing': {
+            'GBP': {'monthly': '£12.95', 'lifetime': '£259', 'symbol': '£', 'label': 'GBP — British pound'},
+            'USD': {'monthly': '$16.95', 'lifetime': '$339', 'symbol': '$', 'label': 'USD — US dollar'},
+            'EUR': {'monthly': '€15.95', 'lifetime': '€319', 'symbol': '€', 'label': 'EUR — Euro'},
+            'AUD': {'monthly': 'A$25.95', 'lifetime': 'A$519', 'symbol': 'A$', 'label': 'AUD — Australian dollar'},
+            'CAD': {'monthly': 'C$23.95', 'lifetime': 'C$479', 'symbol': 'C$', 'label': 'CAD — Canadian dollar'},
+        },
         'class': 'FraudPreventionPlugin',
         'version': '0.1.0',
         'title': 'Fraud Prevention',
@@ -1025,7 +1061,7 @@ def index_page():
         )
 
     faqs = [
-        ('How are the plugins licensed?', 'Each plugin is licensed individually. Monthly subscription with a <strong>7-day free trial</strong> (then £9.95/mo, cancel any time), or one-off lifetime (£199, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
+        ('How are the plugins licensed?', 'Each plugin is licensed individually. Every install starts with a <strong>14-day fully-featured evaluation</strong> — no card needed. After that, a monthly subscription (from £2.95 to £14.95/mo depending on the plugin, with 7 days free before the first charge, cancel any time), an annual plan (two months free), or a one-off lifetime licence (£59–£299, never expires, 12 months of updates included). Both options give you a JWT licence key you set as an env var.'),
         ('How does the free trial work?', 'Pick the monthly plan and enter your email. We collect a payment method via Stripe but don\'t charge for 7 days — and we\'ll send a reminder email 2 days before the trial ends so you can cancel if you change your mind. Trials are limited to one per customer; we detect repeat attempts by the card fingerprint, not just the email.'),
         ('How do I manage / cancel my subscription?', 'Every receipt email includes a Stripe Customer Portal link — click it to update your payment method, see invoices, or cancel. No need to email us. Lifetime customers have nothing to manage; reply to your receipt if you need a VAT invoice.'),
         ('I lost my licence key — what now?', 'Re-send every active key on file at <a class="underline underline-offset-2" href="https://elite.charity/licence/forgot">elite.charity/licence/forgot</a>. We always show the same confirmation regardless of whether the email is on file (anti-enumeration), so check spam if nothing arrives. Limited to 5 requests per email per day.'),
