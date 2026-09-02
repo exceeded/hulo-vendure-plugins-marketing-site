@@ -1250,8 +1250,8 @@ export const config: VendureConfig = {{
 <aside class="vp-pricing-aside">
 <div class="vp-price-card">
 <p class="text-xs uppercase tracking-wider text-accent-600 font-semibold">Monthly · 14-day free trial</p>
-<p class="vp-price-num mt-2"><span class="vp-trial-num">7</span><small>days free</small></p>
-<p class="mt-2 text-sm text-ink-700">Then <span data-monthly-price>{price_mo_gbp}</span>/month. Cancel anytime before day 8 and pay nothing.</p>
+<p class="vp-price-num mt-2"><span class="vp-trial-num">14</span><small>days free</small></p>
+<p class="mt-2 text-sm text-ink-700">Then <span data-monthly-price>{price_mo_gbp}</span>/month. Card required at checkout; cancel any time before day 15 and pay nothing.</p>
 <a href="{BUY_BASE}/{pkg_short}?plan=monthly" class="btn btn-secondary w-full mt-5" style="text-align:center">Start 14-day free trial →</a>
 <p class="vp-tiny-note">Card required. One trial per customer.</p>
 </div>
