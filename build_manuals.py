@@ -1028,7 +1028,7 @@ plugins: [
 </table>
 '''),
         ('licensing', 'Licensing & tiers', '''
-<p>Every install starts a <strong>14-day fully-featured evaluation</strong>. Afterwards the plugin drops to the free tier: drafting, pricing and previewing quotes stay free — <strong>sending, chasers and order conversion require a licence</strong>. Paste your key into the admin (Activate) or set <code>HULO_LICENCE_KEY_QUOTATIONS</code>; the env key wins when both are present. Buy at <a href="/vendure-plugins/quotations/">huloglobal.com/vendure-plugins/quotations</a> — monthly, annual (two months free), or lifetime.</p>
+<p>Every install starts a <strong>14-day fully-featured evaluation</strong>. Afterwards the plugin drops to the free tier: drafting, pricing and previewing quotes stay free — <strong>sending, chasers and order conversion require a licence</strong>. Click <em>Buy licence</em> on the admin banner and the key installs itself within a minute of checkout (renewals too); or paste a key into the admin (Activate) or set <code>HULO_LICENCE_KEY_QUOTATIONS</code>; the env key wins when both are present. Buy at <a href="/vendure-plugins/quotations/">huloglobal.com/vendure-plugins/quotations</a> — monthly, annual (two months free), or lifetime.</p>
 '''),
         ('troubleshooting', 'Troubleshooting', '''
 <ul>
