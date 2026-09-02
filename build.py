@@ -168,7 +168,7 @@ def ccy_picker_html(select_id: str, mobile: bool = False) -> str:
 # one place.
 COMMON_FEATURES = [
     ('MySQL, MariaDB & PostgreSQL', 'The plugin follows whatever database your Vendure `dbConnectionOptions` use — no configuration. Verified against PostgreSQL 17; MySQL/MariaDB installs are unchanged.'),
-    ('Buy &amp; activate from the admin', 'Start the 14-day free trial (or buy) from the plugin\'s admin banner — checkout opens in a new tab and the key installs itself within a minute, renewals included. Already have a key? Paste it into the same banner. No `.env` edit, no redeploy; environment keys still take precedence for infrastructure-as-code setups.'),
+    ('Buy &amp; activate from the admin', 'Start the 14-day free trial, subscribe or buy lifetime from the plugin\'s admin page — checkout opens in a new tab and the key installs itself within a minute, renewals included. The same card shows your plan, first-charge date and a <strong>Manage billing</strong> link to the Stripe portal (update card, cancel, switch plan). Already have a key? Paste it into the same banner. No `.env` edit, no redeploy; environment keys still take precedence for infrastructure-as-code setups.'),
     ('One-click in-app updates', 'When a new version ships, an update banner shows current → latest with a What\'s-new link to the changelog. "Update now" installs the registry-verified release via your project\'s own package manager (yarn/npm/pnpm auto-detected) and gracefully restarts under pm2/systemd. Disable with `HULO_SELF_UPDATE=off`.'),
 ]
 
