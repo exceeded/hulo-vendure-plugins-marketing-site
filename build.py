@@ -444,7 +444,8 @@ PLUGINS = [
             'no storefront integration required. Weighted signals (order velocity '
             'per IP and per canonical email identity, disposable email domains, '
             'block/allow lists with CIDR range matching, high-risk countries, '
-            'failed-payment patterns, plus-addressing abuse, first-order value) '
+            'failed-payment patterns, card AVS postcode/address mismatch, '
+            'plus-addressing abuse, first-order value) '
             'roll up to a 0-100 score. Your per-channel thresholds decide what '
             'happens: log it, hold it for review, or hold it and tell the '
             'customer it is being verified. Digital-goods aware: fulfilment '
@@ -453,7 +454,8 @@ PLUGINS = [
         ),
         'features': [
             ('Server-side enforcement', 'Assessment runs on OrderPlacedEvent inside Vendure — fraudsters can\'t bypass it by skipping your storefront JS. No checkout integration needed.'),
-            ('Weighted signal scoring', 'Velocity (IP/hour, IP/day, email/day, daily value), order value ceilings, disposable emails, list hits, high-risk countries, failed payments, identity fan-out (many emails from one IP = card testing), VPN/proxy/datacentre IPs, IP vs billing-country mismatch, MX-less email domains. Every weight overridable per channel.'),
+            ('Weighted signal scoring', 'Velocity (IP/hour, IP/day, email/day, daily value), order value ceilings, disposable emails, list hits, high-risk countries, failed payments, identity fan-out (many emails from one IP = card testing), VPN/proxy/datacentre IPs, IP vs billing-country mismatch, MX-less email domains, billing vs shipping postcode. Every weight overridable per channel.'),
+            ('Card AVS mismatch', 'The card issuer\'s own verdict on the billing postcode and street address — the strongest address signal there is. Read automatically from Stripe for orders paid through Vendure\'s StripePlugin (no extra config), from payment metadata for custom handlers, or from a one-line avsResolver hook for any other gateway. Only an explicit fail scores; fails open.'),
             ('Monitor → enforce rollout', 'Start in monitor mode: everything is scored and logged, nothing is held. Watch the Activity tab, tune thresholds, then flip to enforce.'),
             ('"Off" never means blind', 'Even with protection disabled the engine still scores every order and records a shadow assessment. Risky shadow-scored orders warn in the server log, fan out to your ops channels and can email the admin — so you keep the full risk picture while protection is paused, and turning it back on starts from evidence, not guesswork.'),
             ('Risk score on the order page', 'Every paid order\'s detail page shows the risk score out of 100, level, contributing signals and review-case status — colour-coded, light + dark theme. Your team sees the risk where they already work.'),
@@ -463,7 +465,7 @@ PLUGINS = [
             ('Email canonicalisation', 'fraud+1@gmail.com, fraud+2@gmail.com and f.r.a.u.d@gmail.com all count as ONE identity for velocity — the plus-addressing trick stops working.'),
             ('Trust works both ways', 'Returning customers earn NEGATIVE points — a real repeat buyer rarely trips a hold. Allowlisted identities (test accounts, key B2B customers, office IPs) skip every check entirely.'),
             ('Customer messages in your voice', 'Every gating outcome — held, approved, rejected — is a per-channel editable template with variables, live preview and thoughtful defaults: a held order reads as \'a quick security check\' with a stated turnaround, never an accusation, and rejections carry a refund timeline plus a human-appeal path. Each shows a default / customised badge; reset any selection or all of them in one click. You choose when — and whether — customers are told: never, block-level only, or always.'),
-            ('"What-if" simulator', 'Run a hypothetical order (email, IP, value, country) against live data and see the exact signal-by-signal score breakdown — without logging or holding anything.'),
+            ('"What-if" simulator', 'Run a hypothetical order (email, IP, value, country, billing / shipping postcodes, card AVS results) against live data and see the exact signal-by-signal score breakdown — without logging or holding anything.'),
             ('Multi-tab admin dashboard', 'Overview KPIs + daily chart, Rules, Review queue with count badge, Lists, Simulate, customer Lookup dossier (orders, spend, failed payments, case history, one-click allow/block), filterable Activity log with CSV export, Settings. WCAG AA in light and dark themes.'),
         ],
         'endpoints': [
