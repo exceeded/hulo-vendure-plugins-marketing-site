@@ -1011,8 +1011,8 @@ def index_page():
         '</tr>'
         for r in comparison_rows
     )
-    # Mobile fallback: render the same data as three cards, one per plugin
-    plugin_titles = ['Email Tracking', 'Geo Block', 'Visitor Analytics', 'Fraud Prevention', 'Review Requests']
+    # Mobile fallback: render the same data as cards, one per plugin
+    plugin_titles = ['Quotations', 'Email Tracking', 'Geo Block', 'Visitor Analytics', 'Fraud Prevention', 'Review Requests']
     mobile_cards = []
     for idx, title in enumerate(plugin_titles):
         rows_for_card = '\n'.join(
@@ -1036,6 +1036,7 @@ def index_page():
     # via versions.json) keeps the "Latest" column honest.
     VERIFIED_VENDURE = '3.7.1'
     compat = {
+        'quotations':        ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'email-tracking':    ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'geo-block':         ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'visitor-analytics': ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
@@ -1100,10 +1101,11 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 </div>
 <!-- Desktop / wide tablet: full comparison table -->
 <div class="vp-compare-table rounded-2xl border border-ink-100 bg-white table-wrap" role="region" aria-label="Plugin comparison" tabindex="0">
-<table class="w-full" style="min-width:880px">
+<table class="w-full" style="min-width:1040px">
 <thead>
 <tr>
 <th class="p-4 font-medium text-sm text-ink-500" style="text-align:left"></th>
+<th class="p-4 font-semibold text-ink-900" style="text-align:center">Quotations</th>
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Email Tracking</th>
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Geo Block</th>
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Visitor Analytics</th>
