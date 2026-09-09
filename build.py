@@ -455,7 +455,7 @@ PLUGINS = [
         'features': [
             ('Server-side enforcement', 'Assessment runs on OrderPlacedEvent inside Vendure — fraudsters can\'t bypass it by skipping your storefront JS. No checkout integration needed.'),
             ('Weighted signal scoring', 'Velocity (IP/hour, IP/day, email/day, daily value), order value ceilings, disposable emails, list hits, high-risk countries, failed payments, identity fan-out (many emails from one IP = card testing), VPN/proxy/datacentre IPs, IP vs billing-country mismatch, MX-less email domains, billing vs shipping postcode. Every weight overridable per channel.'),
-            ('Card AVS mismatch', 'The card issuer\'s own verdict on the billing postcode and street address — the strongest address signal there is. Read automatically from Stripe for orders paid through Vendure\'s StripePlugin (no extra config), from payment metadata for custom handlers, or from a one-line avsResolver hook for any other gateway. Only an explicit fail scores; fails open.'),
+            ('Card AVS mismatch', 'The card issuer\'s own verdict on the billing postcode and street address — the strongest address signal there is. Read automatically from Stripe for orders paid through Vendure\'s StripePlugin (no extra config), from payment metadata for custom handlers, or from a one-line avsResolver hook for any other gateway. Only an explicit fail scores; fails open. AVS fails stand out as red card chips in the review queue and on the order page, so a reviewer sees the bank\'s verdict before anything else.'),
             ('Monitor → enforce rollout', 'Start in monitor mode: everything is scored and logged, nothing is held. Watch the Activity tab, tune thresholds, then flip to enforce.'),
             ('"Off" never means blind', 'Even with protection disabled the engine still scores every order and records a shadow assessment. Risky shadow-scored orders warn in the server log, fan out to your ops channels and can email the admin — so you keep the full risk picture while protection is paused, and turning it back on starts from evidence, not guesswork.'),
             ('Risk score on the order page', 'Every paid order\'s detail page shows the risk score out of 100, level, contributing signals and review-case status — colour-coded, light + dark theme. Your team sees the risk where they already work.'),
@@ -955,6 +955,7 @@ def index_page():
         ],
         'fraud-prevention': [
             'Risk score on every order, server-side',
+            'Card AVS postcode / address mismatch from the issuer',
             'Monitor / enforce modes + review queue',
             'Threat feeds: FireHOL, Spamhaus, Tor, disposable emails',
             'Fulfilment held until a human approves',
