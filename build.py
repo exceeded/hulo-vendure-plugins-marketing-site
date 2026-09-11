@@ -484,6 +484,66 @@ PLUGINS = [
         ],
     },
     {
+        'slug': 'checkout-guard',
+        'pkg': '@huloglobal/vendure-plugin-checkout-guard',
+        # Same tier as Fraud Prevention — must match the currency_options on
+        # the Stripe price objects (created 2026-09-11).
+        'pricing': {
+            'GBP': {'monthly': '£12.95', 'lifetime': '£259', 'symbol': '£', 'label': 'GBP — British pound'},
+            'USD': {'monthly': '$16.95', 'lifetime': '$339', 'symbol': '$', 'label': 'USD — US dollar'},
+            'EUR': {'monthly': '€15.95', 'lifetime': '€319', 'symbol': '€', 'label': 'EUR — Euro'},
+            'AUD': {'monthly': 'A$25.95', 'lifetime': 'A$519', 'symbol': 'A$', 'label': 'AUD — Australian dollar'},
+            'CAD': {'monthly': 'C$23.95', 'lifetime': 'C$479', 'symbol': 'C$', 'label': 'CAD — Canadian dollar'},
+        },
+        'class': 'CheckoutGuardPlugin',
+        'version': '0.1.0',
+        'title': 'Checkout Guard',
+        'tagline': 'The safety layer around Vendure checkout and payments: Stripe manual-capture holds that actually place the order, bank transfer with auto-expiry, failed-payment and orphaned-charge visibility with nightly Stripe reconciliation, session-bound order lookup, checkout rate limits and a funnel — in one admin dashboard.',
+        'description': (
+            'Vendure\'s Stripe integration settles a payment when the intent succeeds — '
+            'and nothing else. Put a manual-capture hold on a large order and the '
+            'customer sees a confirmation page while the order never places and the '
+            'authorisation silently expires. Enable bank transfer and there is no '
+            'expiry, no reminder, no reconciliation. A card declines and no one '
+            'ever knows. Checkout Guard closes those gaps server-side: an Authorized '
+            'payment for every hold with capture, cancel and a safety capture before '
+            'Stripe\'s seven-day window closes; a bank-transfer method that carries '
+            'the account details to the storefront, expires unpaid orders and tells '
+            'you when money is due; a payment-event log that records webhook '
+            'failures, storefront declines, orphaned charges and amount drift, with '
+            'a nightly Stripe reconciliation; an order-lookup strategy bound to the '
+            'session that placed the order; a trusted client-IP contract for your '
+            'server-side proxy; rate limits on the checkout mutations that get '
+            'brute-forced; and funnel events so you can finally see where a checkout '
+            'is lost.'
+        ),
+        'features': [
+            ('Manual-capture holds that place the order', 'A `stripe-hold` payment handler plus a signed webhook for `payment_intent.amount_capturable_updated`: the order becomes PaymentAuthorized the moment the hold is placed. Capture or cancel from the dashboard or the Vendure order page; a safety capture runs before the authorisation expires; alerts fan out to your ops channels.'),
+            ('Bank transfer done properly', 'Account details travel in the payment\'s public metadata so the storefront and confirmation page render them without hard-coding; an eligibility checker (min/max, guests, customer groups); unpaid orders expire automatically after N days with a reminder event before that; a "received" button settles the order and releases fulfilment.'),
+            ('Failed payments you can see', 'Webhook declines, storefront-reported declines, orphaned charges and settled amounts that differ from the order total are written to a payment-event log with the IP — so fraud tooling can count them and you can spot a broken checkout before customers email you.'),
+            ('Nightly Stripe reconciliation', 'Every succeeded or held PaymentIntent from the last days is matched to a Vendure payment; anything unmatched is flagged and alerted, per channel, with the Stripe key each channel already has.'),
+            ('Session-bound order lookup', 'Vendure lets anyone with an order code read a fresh order for two hours. Checkout Guard binds anonymous access to the session that placed it — the confirmation page still works, strangers with a code do not.'),
+            ('Trusted client IP', 'A shared-secret header contract for server-side proxies (Qwik server$, Next.js route handlers) so the order IP that feeds fraud scoring cannot be spoofed by a browser.'),
+            ('Checkout rate limits', 'Token-bucket limits on applyCouponCode, addPaymentToOrder, createStripePaymentIntent and transitionOrderToState, keyed by client IP, returning a clean 429 — stops coupon brute force and intent spam without touching nginx.'),
+            ('Checkout funnel', 'Step, attempt, failure and coupon-rejection events from the storefront, summarised per step with drop-off percentages, so single-URL checkouts stop being invisible to analytics.'),
+            ('Ops alerts', 'Slack, Discord, Microsoft Teams, Telegram, a signed webhook and email — every hold, expiry, orphan and drift can ping the channel your team actually reads.'),
+            ('Admin dashboard', 'Overview KPIs, Holds, Bank transfers, Payment events, Funnel and Settings tabs, plus the Licence & billing card. Light and dark themes.'),
+        ],
+        'endpoints': [
+            ('POST', '/checkout-guard/stripe-webhook',      'Stripe: signed webhook for holds + failures'),
+            ('GET',  '/checkout-guard/holds',               'Admin: Authorized Stripe holds'),
+            ('POST', '/checkout-guard/holds/:id/capture',   'Admin: capture a hold (settles the payment)'),
+            ('POST', '/checkout-guard/holds/:id/cancel',    'Admin: release a hold'),
+            ('GET',  '/checkout-guard/bank-transfers',      'Admin: bank transfers awaiting / expired / settled'),
+            ('POST', '/checkout-guard/bank-transfers/:id/received', 'Admin: mark a transfer received'),
+            ('POST', '/checkout-guard/client-decline',      'Public: storefront-reported card decline (rate limited)'),
+            ('POST', '/checkout-guard/funnel',              'Public: checkout funnel event (rate limited)'),
+            ('GET',  '/checkout-guard/events',              'Admin: payment-event log'),
+            ('GET',  '/checkout-guard/summary',             'Admin: dashboard KPIs'),
+            ('GET',  '/checkout-guard/funnel/summary',      'Admin: per-step funnel with drop-off'),
+        ],
+    },
+    {
         'slug': 'review-requests',
         'pkg': '@huloglobal/vendure-plugin-review-requests',
         'class': 'ReviewRequestPlugin',
@@ -929,6 +989,12 @@ TICK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="
 
 def index_page():
     short_features = {
+        'checkout-guard': [
+            'Stripe manual-capture holds that place the order',
+            'Bank transfer with auto-expiry + reminders',
+            'Failed-payment log + nightly Stripe reconciliation',
+            'Session-bound order lookup, rate limits, funnel',
+        ],
         'quotations': [
             'Quote builder with live catalogue prices',
             'Signed accept/decline link with typed-name signature',
@@ -985,16 +1051,16 @@ def index_page():
 </article>''')
 
     comparison_rows = [
-        ['Drop-in install (one yarn add)', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Channel-aware', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Admin UI included', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['MySQL / MariaDB / PostgreSQL', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Licence activation in the admin', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['One-click in-app updates', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Database tables', '4', '2', '1', '2', '8', '5'],
-        ['Privacy controls', 'Signed links, no tracking pixels', 'IP hash', 'IP allowlist', 'DNT, IP anonymisation, consent gate', 'Allowlist bypass', 'Opt-out + exclusions'],
-        ['Offline licence verification', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Self-hosted (no calls to us at runtime)', 'yes', 'yes', 'yes', 'yes', 'yes-note', 'yes-note'],
+        ['Drop-in install (one yarn add)', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Channel-aware', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Admin UI included', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['MySQL / MariaDB / PostgreSQL', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Licence activation in the admin', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['One-click in-app updates', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Database tables', '4', '2', '1', '2', '8', '5', '3'],
+        ['Privacy controls', 'Signed links, no tracking pixels', 'IP hash', 'IP allowlist', 'DNT, IP anonymisation, consent gate', 'Allowlist bypass', 'Opt-out + exclusions', 'Session-bound order access'],
+        ['Offline licence verification', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Self-hosted (no calls to us at runtime)', 'yes', 'yes', 'yes', 'yes', 'yes-note', 'yes-note', 'yes'],
     ]
     def fmt_cell(c, plain=False):
         if c == 'yes': return '<span class="text-accent-600 font-bold">✓</span>' if not plain else '✓'
@@ -1015,7 +1081,7 @@ def index_page():
         for r in comparison_rows
     )
     # Mobile fallback: render the same data as cards, one per plugin
-    plugin_titles = ['Quotations', 'Email Tracking', 'Geo Block', 'Visitor Analytics', 'Fraud Prevention', 'Review Requests']
+    plugin_titles = ['Quotations', 'Email Tracking', 'Geo Block', 'Visitor Analytics', 'Fraud Prevention', 'Review Requests', 'Checkout Guard']
     mobile_cards = []
     for idx, title in enumerate(plugin_titles):
         rows_for_card = '\n'.join(
@@ -1045,6 +1111,7 @@ def index_page():
         'visitor-analytics': ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'fraud-prevention':  ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'review-requests':   ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
+        'checkout-guard':    ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
     }
     compat_rows_html = ''
     for p in PLUGINS:
@@ -1104,7 +1171,7 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 </div>
 <!-- Desktop / wide tablet: full comparison table -->
 <div class="vp-compare-table rounded-2xl border border-ink-100 bg-white table-wrap" role="region" aria-label="Plugin comparison" tabindex="0">
-<table class="w-full" style="min-width:1040px">
+<table class="w-full" style="min-width:1180px">
 <thead>
 <tr>
 <th class="p-4 font-medium text-sm text-ink-500" style="text-align:left"></th>
@@ -1114,6 +1181,7 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Visitor Analytics</th>
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Fraud Prevention</th>
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Review Requests</th>
+<th class="p-4 font-semibold text-ink-900" style="text-align:center">Checkout Guard</th>
 </tr>
 </thead>
 <tbody>{rows_html}</tbody>
