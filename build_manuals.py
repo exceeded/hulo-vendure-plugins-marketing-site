@@ -1041,6 +1041,145 @@ plugins: [
     ],
 }
 
+# ─────────────────────────────────────────────────────────────────────────
+# Business Credit
+# ─────────────────────────────────────────────────────────────────────────
+
+BUSINESS_CREDIT_MANUAL = {
+    'slug': 'business-credit',
+    'title_short': 'Business Credit',
+    'sections': [
+        ('overview', 'Overview', '''
+<p><strong>Business Credit</strong> adds trade-credit accounts to Vendure. A business customer applies for terms from your storefront, you approve them with a credit limit and net terms, and from then on they can choose <em>Pay on Account</em> at checkout: the order is placed immediately and an invoice with a due date is raised against their account. Money comes back by bank transfer, card (a Stripe pay link), direct debit, cheque, cash, credit note or write-off, and every settlement is allocated oldest-first across their open invoices. A daily run marks invoices overdue, sends reminders, applies late fees if you use them, suspends accounts that go too far past due, and emails monthly statements.</p>
+<ul>
+<li><strong>Available credit</strong> = effective limit (a temporary increase while it lasts, else the permanent limit) − open invoice balances (including late fees) + any credit balance held from overpayments.</li>
+<li><strong>Account statuses:</strong> pending → active ⇄ suspended → closed (closing needs zero exposure).</li>
+<li><strong>Invoice statuses:</strong> open → part_paid → paid; overdue once past due date plus grace; written_off; void.</li>
+<li><strong>Audit:</strong> every limit change stores old value, new value, kind (permanent / temporary / expired), reason and administrator; every state change writes an event.</li>
+</ul>
+'''),
+        ('install', 'Install & configure', '''
+<p>Install and register the plugin:</p>
+<pre><code>yarn add @huloglobal/vendure-plugin-business-credit</code></pre>
+<pre><code>import { BusinessCreditPlugin } from '@huloglobal/vendure-plugin-business-credit';
+
+plugins: [
+  BusinessCreditPlugin.init({
+    publicBaseUrl: 'https://shop.example.com',        // licence domain matching
+    storefrontBaseUrl: 'https://shop.example.com',    // links in customer emails
+    licenceKey: process.env.HULO_LICENCE_KEY_BUSINESS_CREDIT,  // optional — or activate in the admin
+    stripeWebhookSecret: process.env.BUSINESS_CREDIT_STRIPE_WEBHOOK_SECRET, // card pay links
+    smtp: { host, port, user, pass, from },           // or SMTP_SERVER / SMTP_USER / SMTP_PASSWORD env
+  }),
+]</code></pre>
+<p>Add the admin UI in your <code>compileUiExtensions</code> call with <code>BusinessCreditPlugin.uiExtensions</code>, then create a <strong>payment method</strong> in Settings → Payment methods: handler <em>Pay on Account (business credit)</em>, eligibility checker <em>business-credit-eligibility</em>. The method only appears at checkout for customers with an active account, enough available credit and no overdue hold. Tables are created on first boot; no migration is needed.</p>
+<table>
+<tr><th>Setting (per channel)</th><th>What it does</th></tr>
+<tr><td>Default terms / limit / grace</td><td>Applied to approvals; grace days delay the overdue mark.</td></tr>
+<tr><td>Invoice prefix + sequence</td><td>Invoice numbers such as <code>INV-000042</code>.</td></tr>
+<tr><td>Reminder schedule</td><td>Days relative to the due date, e.g. <code>-3, 0, 7, 14, 30</code>.</td></tr>
+<tr><td>Late fee % per month + grace</td><td>Pro-rata monthly fee on the overdue balance; off when empty.</td></tr>
+<tr><td>Auto-suspend after N days</td><td>Suspends the account when any invoice is that far overdue.</td></tr>
+<tr><td>Statement day + statement emails</td><td>Emails last month's statement with aging on that day.</td></tr>
+<tr><td>Require purchase order</td><td>Pay on Account is refused without a PO number.</td></tr>
+<tr><td>Remittance text</td><td>Your bank details, shown on invoices, emails and the confirmation page.</td></tr>
+</table>
+'''),
+        ('admin', 'Admin UI', '''
+<p><strong>Sales → Business credit</strong>.</p>
+<ul>
+<li><strong>Overview</strong> — total exposure, overdue, credit held, due in the next seven days, pending applications, aging buckets and the ten largest exposures.</li>
+<li><strong>Accounts</strong> — search and filter; open an account for its availability gauge, company details, terms, status actions (suspend / reactivate / close), limit adjustments with history, invoices, ledger, settlement recording, statements and events. <em>New account</em> creates one for an existing customer without an application.</li>
+<li><strong>Applications</strong> — the storefront queue: approve with a limit, terms and a note, or reject with a note; the customer is emailed either way.</li>
+<li><strong>Invoices</strong> and <strong>Settlements</strong> — all invoices and payments across accounts with write-off, void, fee, pay-link and refund actions, plus CSV export.</li>
+<li><strong>Settings</strong> — the per-channel configuration above, email previews and a test send, and <em>Run dunning now</em> with a report.</li>
+</ul>
+'''),
+        ('settlements', 'Settlements & Stripe', '''
+<p>Record a settlement with a method, amount, reference and date. Allocation is oldest-first across open invoices unless you allocate per invoice; anything left over is held as account credit and applied to the next invoices automatically. Overpayments, credit notes from refunds and write-offs all flow through the same ledger, so the account balance is always the sum of its ledger rows.</p>
+<p><strong>Card pay links</strong> create a Stripe Checkout Session for one or more invoices using the Stripe key on the channel's Stripe payment method. Point a Stripe webhook at <code>https://your-vendure-host/business-credit/stripe-webhook</code> with the events <code>checkout.session.completed</code> and <code>checkout.session.async_payment_succeeded</code>, and set the signing secret as <code>BUSINESS_CREDIT_STRIPE_WEBHOOK_SECRET_&lt;CHANNELCODE&gt;</code> or the plugin's <code>stripeWebhookSecret</code>. Replays are ignored: one settlement per payment intent.</p>
+'''),
+        ('endpoints', 'REST endpoints', '''
+<table>
+<tr><th>Method</th><th>Path</th><th>Purpose</th></tr>
+<tr><td>GET</td><td><code>/business-credit/my/account</code></td><td>Shop: limit, available credit, terms, status</td></tr>
+<tr><td>POST</td><td><code>/business-credit/my/apply</code></td><td>Shop: apply for an account (licensed)</td></tr>
+<tr><td>GET</td><td><code>/business-credit/my/invoices</code></td><td>Shop: my invoices</td></tr>
+<tr><td>POST</td><td><code>/business-credit/my/invoices/pay-link</code></td><td>Shop: pay selected invoices by card (licensed)</td></tr>
+<tr><td>GET</td><td><code>/business-credit/my/statement</code></td><td>Shop: statement for a period (JSON or HTML)</td></tr>
+<tr><td>GET</td><td><code>/business-credit/dashboard</code></td><td>Admin: exposure, overdue, aging</td></tr>
+<tr><td>GET/POST</td><td><code>/business-credit/accounts</code></td><td>Admin: list / create</td></tr>
+<tr><td>POST</td><td><code>/business-credit/accounts/:id/limit</code></td><td>Admin: permanent or temporary limit change</td></tr>
+<tr><td>POST</td><td><code>/business-credit/accounts/:id/status</code></td><td>Admin: suspend / reactivate / close</td></tr>
+<tr><td>POST</td><td><code>/business-credit/applications/:id/approve</code></td><td>Admin: approve with limit + terms</td></tr>
+<tr><td>POST</td><td><code>/business-credit/settlements</code></td><td>Admin: record a settlement</td></tr>
+<tr><td>POST</td><td><code>/business-credit/invoices/:id/pay-link</code></td><td>Admin: Stripe pay link for an invoice</td></tr>
+<tr><td>POST</td><td><code>/business-credit/stripe-webhook</code></td><td>Stripe: signed webhook for card settlements</td></tr>
+<tr><td>POST</td><td><code>/business-credit/dunning/run</code></td><td>Admin: run reminders / fees / suspensions now</td></tr>
+<tr><td>GET</td><td><code>/business-credit/export/:kind.csv</code></td><td>Admin: invoices / settlements / ledger CSV (licensed)</td></tr>
+</table>
+<p>Storefront tip: send the customer's PO number as <code>metadata.purchaseOrder</code> in <code>addPaymentToOrder</code>, and read <code>payment.metadata.public</code> (invoice number, due date, remittance text) on your confirmation page.</p>
+'''),
+        ('licensing', 'Licensing & tiers', '''
+<p>Unlicensed installs run in the <strong>free tier</strong>: accounts, limits with the audit trail, Pay on Account, invoices, manual settlements, the ledger and statements in the admin all stay on. <strong>Card pay links, reminders and dunning emails, late fees, auto-suspend, statement emails, CSV exports and storefront applications require a licence.</strong> Start the 14-day free trial from the admin banner, click <em>Buy licence</em> and the key installs itself within a minute of checkout, or paste a key into the admin or set <code>HULO_LICENCE_KEY_BUSINESS_CREDIT</code>. Buy at <a href="/vendure-plugins/business-credit/">huloglobal.com/vendure-plugins/business-credit</a> — monthly, annual, or lifetime.</p>
+'''),
+        ('troubleshooting', 'Troubleshooting', '''
+<ul>
+<li><strong>Pay on Account is not offered at checkout:</strong> the customer needs an <em>active</em> account in this channel, available credit at least the order total, no overdue hold, and the payment method must be enabled with the <em>business-credit-eligibility</em> checker.</li>
+<li><strong>Declined with "purchase order required":</strong> the channel or account requires a PO; send it as <code>metadata.purchaseOrder</code>.</li>
+<li><strong>No reminder emails:</strong> reminders need a licence, SMTP configured, and the daily run happens on the worker at 07:00 — use <em>Run dunning now</em> in Settings to test.</li>
+<li><strong>Card payment did not settle the invoice:</strong> check the webhook secret env name matches the channel code, and that Stripe shows the event delivered with a 200.</li>
+<li><strong>Cannot close an account:</strong> closing needs zero exposure — settle or write off open invoices first.</li>
+</ul>
+'''),
+    ],
+}
+
+# ─────────────────────────────────────────────────────────────────────────
+# Checkout Guard
+# ─────────────────────────────────────────────────────────────────────────
+
+CHECKOUT_GUARD_MANUAL = {
+    'slug': 'checkout-guard',
+    'title_short': 'Checkout Guard',
+    'sections': [
+        ('overview', 'Overview', '''
+<p><strong>Checkout Guard</strong> is the safety layer around Vendure checkout and payments: Stripe manual-capture holds that actually place the order (an Authorized payment, capture or cancel from the admin, a safety capture before the authorisation expires), a bank-transfer method that carries the account details to the storefront and expires unpaid orders, a payment-event log with nightly Stripe reconciliation, session-bound anonymous order lookup, a trusted client-IP contract for server-side proxies, rate limits on the checkout mutations, and a checkout funnel.</p>
+'''),
+        ('install', 'Install & configure', '''
+<pre><code>yarn add @huloglobal/vendure-plugin-checkout-guard</code></pre>
+<pre><code>import { CheckoutGuardPlugin, SessionBoundOrderByCodeAccessStrategy } from '@huloglobal/vendure-plugin-checkout-guard';
+
+orderOptions: { orderByCodeAccessStrategy: new SessionBoundOrderByCodeAccessStrategy('2h') },
+plugins: [
+  CheckoutGuardPlugin.init({
+    publicBaseUrl: 'https://shop.example.com',
+    licenceKey: process.env.HULO_LICENCE_KEY_CHECKOUT_GUARD,
+    stripe: { webhookSecret: process.env.STRIPE_CG_WEBHOOK_SECRET, safetyCaptureDays: 6 },
+    bankTransfer: { expiryDays: 7, reminderAfterDays: 3 },
+    reconciliation: { enabled: true, lookbackDays: 3 },
+    trustedClientIp: { header: 'x-real-client-ip', secretHeader: 'x-checkout-guard-proxy', secret: process.env.CHECKOUT_GUARD_PROXY_SECRET },
+    ops: { slackWebhookUrl: process.env.OPS_SLACK_WEBHOOK_URL, adminEmail: 'ops@example.com' },
+  }),
+]</code></pre>
+<p>Add <code>CheckoutGuardPlugin.uiExtensions</code> to <code>compileUiExtensions</code>. Create a payment method with the <em>stripe-hold</em> handler per channel that should hold rather than charge, and one with the <em>bank-transfer</em> handler (its arguments carry the account details shown to customers). Point a Stripe webhook at <code>/checkout-guard/stripe-webhook</code> with <code>payment_intent.amount_capturable_updated</code>, <code>payment_intent.payment_failed</code> and <code>charge.succeeded</code>.</p>
+'''),
+        ('admin', 'Admin UI', '''
+<p><strong>Sales → Checkout Guard</strong>: Overview KPIs, Holds (capture / cancel), Bank transfers (awaiting / expired / settled, mark received), Payment events, Funnel and Settings, plus the Licence & billing card.</p>
+'''),
+        ('licensing', 'Licensing & tiers', '''
+<p>Free tier: session-bound order lookup, trusted client IP, rate limits, funnel and the bank-transfer handler. <strong>Stripe holds, bank-transfer expiry and reminders, the failed-payment log, reconciliation, drift guard and ops alerts require a licence.</strong> Start the 14-day free trial or buy from the admin banner, or set <code>HULO_LICENCE_KEY_CHECKOUT_GUARD</code>. Buy at <a href="/vendure-plugins/checkout-guard/">huloglobal.com/vendure-plugins/checkout-guard</a>.</p>
+'''),
+        ('troubleshooting', 'Troubleshooting', '''
+<ul>
+<li><strong>Hold placed but order not PaymentAuthorized:</strong> the webhook is not reaching the plugin or the secret is wrong — Stripe's dashboard shows the delivery status; the endpoint answers 5xx so Stripe retries.</li>
+<li><strong>Bank transfers never expire:</strong> expiry and reminders run on the worker and need a licence.</li>
+<li><strong>Order IP shows the proxy:</strong> the storefront proxy must send both the client-IP header and the shared-secret header configured in <code>trustedClientIp</code>.</li>
+</ul>
+'''),
+    ],
+}
+
 
 def render_manual(m):
     canonical = f'https://huloglobal.com/vendure-plugins/{m["slug"]}/docs/'
@@ -1069,7 +1208,7 @@ def render_manual(m):
 
 
 def main():
-    for m in (QUOTATIONS_MANUAL, EMAIL_TRACKING_MANUAL, GEO_BLOCK_MANUAL, VISITOR_ANALYTICS_MANUAL, FRAUD_PREVENTION_MANUAL, REVIEW_REQUESTS_MANUAL):
+    for m in (BUSINESS_CREDIT_MANUAL, CHECKOUT_GUARD_MANUAL, QUOTATIONS_MANUAL, EMAIL_TRACKING_MANUAL, GEO_BLOCK_MANUAL, VISITOR_ANALYTICS_MANUAL, FRAUD_PREVENTION_MANUAL, REVIEW_REQUESTS_MANUAL):
         d = OUT / m['slug'] / 'docs'
         d.mkdir(parents=True, exist_ok=True)
         (d / 'index.html').write_text(render_manual(m), encoding='utf-8')
