@@ -484,6 +484,71 @@ PLUGINS = [
         ],
     },
     {
+        'slug': 'business-credit',
+        'pkg': '@huloglobal/vendure-plugin-business-credit',
+        # Same tier as Quotations — must match the currency_options on the
+        # Stripe price objects (created 2026-09-16).
+        'pricing': {
+            'GBP': {'monthly': '£14.95', 'lifetime': '£299', 'symbol': '£', 'label': 'GBP — British pound'},
+            'USD': {'monthly': '$19.95', 'lifetime': '$399', 'symbol': '$', 'label': 'USD — US dollar'},
+            'EUR': {'monthly': '€17.95', 'lifetime': '€359', 'symbol': '€', 'label': 'EUR — Euro'},
+            'AUD': {'monthly': 'A$29.95', 'lifetime': 'A$599', 'symbol': 'A$', 'label': 'AUD — Australian dollar'},
+            'CAD': {'monthly': 'C$26.95', 'lifetime': 'C$539', 'symbol': 'C$', 'label': 'CAD — Canadian dollar'},
+        },
+        'class': 'BusinessCreditPlugin',
+        'version': '0.1.0',
+        'title': 'Business Credit',
+        'tagline': 'Trade credit for Vendure B2B: credit applications and approvals, per-customer limits with temporary increases and a full audit trail, a Pay-on-Account payment method that raises a net-terms invoice at checkout, settlements by bank transfer, card, direct debit, cheque or credit note with automatic allocation, statements with aging, reminders, late fees and auto-suspend — in one admin dashboard.',
+        'description': (
+            'Vendure has no concept of a credit account. Business buyers expect one: '
+            'apply for terms, get a limit, order without a card, receive an invoice '
+            'due in 30 days, pay by bank transfer or card when the statement arrives. '
+            'Business Credit adds all of it server-side. Customers apply from the '
+            'storefront; you approve with a limit and net terms. A `business-credit` '
+            'payment handler and eligibility checker show Pay on Account only to '
+            'customers with an active account and enough available credit, and '
+            'issue a numbered invoice with a due date the moment the order is placed. '
+            'Every settlement — bank transfer, card through a Stripe pay link, direct '
+            'debit, cheque, cash, credit note or write-off — is allocated oldest-first '
+            'across open invoices, with overpayments held as account credit. Limits '
+            'can be raised permanently or temporarily with an expiry, every change '
+            'logged with who and why. A daily run marks invoices overdue, sends '
+            'reminders on a schedule you set, applies late fees if you want them, '
+            'suspends accounts that go too far past due, and emails monthly '
+            'statements with an aging summary. Customers see their limit, available '
+            'credit, invoices and statements through a small REST API you can drop '
+            'into any storefront.'
+        ),
+        'features': [
+            ('Credit applications and approvals', 'A storefront application form (company, registration and VAT numbers, requested limit and terms, trade references) lands in an admin queue. Approve with a limit and net terms, or reject with a note; the customer is emailed either way and the account is created on approval.'),
+            ('Limits with an audit trail', 'Permanent or temporary limit changes (a temporary increase expires on a date you set), each recorded with the old value, new value, reason and administrator. Available credit is derived live: effective limit minus open invoices plus any credit balance.'),
+            ('Pay on Account at checkout', 'The `business-credit` payment handler settles the order and issues a numbered invoice with a due date; the eligibility checker hides the method from customers without an active account, enough available credit, or with an overdue hold. Purchase-order numbers can be required.'),
+            ('Settlements by any method', 'Record bank transfers, direct debits, cheques, cash, credit notes and write-offs, or send a Stripe pay link for card payment; the signed webhook records the settlement. Allocation is oldest-first or explicit per invoice; overpayment becomes account credit and is applied to the next invoices automatically.'),
+            ('Statements with aging', 'Per-account statements for any period: opening balance, every charge and payment, closing balance, and aging buckets (current, 1–30, 31–60, 61–90, 90+). HTML for the admin and the customer, emailed monthly on the statement day.'),
+            ('Reminders, late fees, auto-suspend', 'A daily run sends reminders before, on and after the due date on a schedule you set per channel, applies a monthly late fee pro rata if configured, and suspends accounts that go more than N days overdue — reactivate with one click once they pay.'),
+            ('Customer-facing REST API', '`/business-credit/my/*` gives your storefront the account summary, invoices, statements and pay links for the signed-in customer, plus the application form. Works with Qwik, Next.js, Remix or plain fetch.'),
+            ('Admin dashboard', 'Overview (exposure, overdue, credit held, due this week, aging), Accounts with a full detail panel, Applications queue, Invoices, Settlements, Settings with email preview and a run-now button, plus the Licence & billing card. Light and dark themes.'),
+        ],
+        'endpoints': [
+            ('GET',  '/business-credit/dashboard',                 'Admin: exposure, overdue, aging, top accounts'),
+            ('GET',  '/business-credit/accounts',                  'Admin: accounts with availability'),
+            ('POST', '/business-credit/accounts/:id/limit',        'Admin: permanent or temporary limit change'),
+            ('POST', '/business-credit/accounts/:id/status',       'Admin: suspend / reactivate / close'),
+            ('GET',  '/business-credit/applications',              'Admin: credit application queue'),
+            ('POST', '/business-credit/applications/:id/approve',  'Admin: approve with limit + terms'),
+            ('GET',  '/business-credit/invoices',                  'Admin: invoices with balance + days overdue'),
+            ('POST', '/business-credit/settlements',               'Admin: record a settlement (any method)'),
+            ('POST', '/business-credit/invoices/:id/pay-link',     'Admin: Stripe pay link for an invoice'),
+            ('POST', '/business-credit/stripe-webhook',            'Stripe: signed webhook for card settlements'),
+            ('GET',  '/business-credit/accounts/:id/statement',    'Admin: statement for a period'),
+            ('POST', '/business-credit/dunning/run',               'Admin: run reminders / fees / suspensions now'),
+            ('GET',  '/business-credit/my/account',                'Shop: limit, available credit, terms, status'),
+            ('POST', '/business-credit/my/apply',                  'Shop: apply for a credit account'),
+            ('GET',  '/business-credit/my/invoices',               'Shop: my invoices'),
+            ('POST', '/business-credit/my/invoices/pay-link',      'Shop: pay selected invoices by card'),
+        ],
+    },
+    {
         'slug': 'checkout-guard',
         'pkg': '@huloglobal/vendure-plugin-checkout-guard',
         # Same tier as Fraud Prevention — must match the currency_options on
@@ -989,6 +1054,12 @@ TICK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="
 
 def index_page():
     short_features = {
+        'business-credit': [
+            'Credit applications, limits + audit trail',
+            'Pay on Account handler with net-terms invoices',
+            'Settlements by bank, card, DD, cheque or credit note',
+            'Statements, aging, reminders, late fees, auto-suspend',
+        ],
         'checkout-guard': [
             'Stripe manual-capture holds that place the order',
             'Bank transfer with auto-expiry + reminders',
@@ -1051,16 +1122,16 @@ def index_page():
 </article>''')
 
     comparison_rows = [
-        ['Drop-in install (one yarn add)', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Channel-aware', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Admin UI included', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['MySQL / MariaDB / PostgreSQL', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Licence activation in the admin', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['One-click in-app updates', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Database tables', '4', '2', '1', '2', '8', '5', '3'],
-        ['Privacy controls', 'Signed links, no tracking pixels', 'IP hash', 'IP allowlist', 'DNT, IP anonymisation, consent gate', 'Allowlist bypass', 'Opt-out + exclusions', 'Session-bound order access'],
-        ['Offline licence verification', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Self-hosted (no calls to us at runtime)', 'yes', 'yes', 'yes', 'yes', 'yes-note', 'yes-note', 'yes'],
+        ['Drop-in install (one yarn add)', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Channel-aware', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Admin UI included', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['MySQL / MariaDB / PostgreSQL', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Licence activation in the admin', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['One-click in-app updates', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Database tables', '4', '2', '1', '2', '8', '5', '3', '8'],
+        ['Privacy controls', 'Signed links, no tracking pixels', 'IP hash', 'IP allowlist', 'DNT, IP anonymisation, consent gate', 'Allowlist bypass', 'Opt-out + exclusions', 'Session-bound order access', 'Customer-scoped API, no card data stored'],
+        ['Offline licence verification', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
+        ['Self-hosted (no calls to us at runtime)', 'yes', 'yes', 'yes', 'yes', 'yes-note', 'yes-note', 'yes', 'yes'],
     ]
     def fmt_cell(c, plain=False):
         if c == 'yes': return '<span class="text-accent-600 font-bold">✓</span>' if not plain else '✓'
@@ -1081,7 +1152,7 @@ def index_page():
         for r in comparison_rows
     )
     # Mobile fallback: render the same data as cards, one per plugin
-    plugin_titles = ['Quotations', 'Email Tracking', 'Geo Block', 'Visitor Analytics', 'Fraud Prevention', 'Review Requests', 'Checkout Guard']
+    plugin_titles = ['Quotations', 'Email Tracking', 'Geo Block', 'Visitor Analytics', 'Fraud Prevention', 'Review Requests', 'Checkout Guard', 'Business Credit']
     mobile_cards = []
     for idx, title in enumerate(plugin_titles):
         rows_for_card = '\n'.join(
@@ -1112,6 +1183,7 @@ def index_page():
         'fraud-prevention':  ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'review-requests':   ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'checkout-guard':    ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
+        'business-credit':   ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
     }
     compat_rows_html = ''
     for p in PLUGINS:
@@ -1171,7 +1243,7 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 </div>
 <!-- Desktop / wide tablet: full comparison table -->
 <div class="vp-compare-table rounded-2xl border border-ink-100 bg-white table-wrap" role="region" aria-label="Plugin comparison" tabindex="0">
-<table class="w-full" style="min-width:1180px">
+<table class="w-full" style="min-width:1320px">
 <thead>
 <tr>
 <th class="p-4 font-medium text-sm text-ink-500" style="text-align:left"></th>
@@ -1182,6 +1254,7 @@ Battle-tested in our own UK e-commerce stack. One <code class="font-mono text-sm
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Fraud Prevention</th>
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Review Requests</th>
 <th class="p-4 font-semibold text-ink-900" style="text-align:center">Checkout Guard</th>
+<th class="p-4 font-semibold text-ink-900" style="text-align:center">Business Credit</th>
 </tr>
 </thead>
 <tbody>{rows_html}</tbody>
