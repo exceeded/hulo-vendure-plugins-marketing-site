@@ -498,7 +498,7 @@ PLUGINS = [
         'class': 'BusinessCreditPlugin',
         'version': '0.1.0',
         'title': 'Business Credit',
-        'tagline': 'Trade credit for Vendure B2B: credit applications and approvals, per-customer limits with temporary increases and a full audit trail, a Pay-on-Account payment method that raises a net-terms invoice at checkout, settlements by bank transfer, card, direct debit, cheque or credit note with automatic allocation, statements with aging, reminders, late fees and auto-suspend — in one admin dashboard.',
+        'tagline': 'The credit-customer platform for Vendure B2B: applications, invitations and auto-approval, per-customer limits with an audit trail, multi-user company accounts, Pay on Account with net-terms invoices, prepaid funds, settlements by any method with Stripe pay links, payment plans, statements, dunning and a reward-points programme — in one admin dashboard and one storefront API.',
         'description': (
             'Vendure has no concept of a credit account. Business buyers expect one: '
             'apply for terms, get a limit, order without a card, receive an invoice '
@@ -517,7 +517,15 @@ PLUGINS = [
             'suspends accounts that go too far past due, and emails monthly '
             'statements with an aging summary. Customers see their limit, available '
             'credit, invoices and statements through a small REST API you can drop '
-            'into any storefront.'
+            'into any storefront. Customers can also pay money in ahead of time: '
+            'prepaid funds are held on the account and settle new orders the '
+            'moment they are placed. Companies can add colleagues to one account '
+            'with buyer or viewer roles, you can invite a business straight to '
+            'an approved account by email, applications that meet your rules are '
+            'approved automatically, every account gets a review date, an '
+            'overdue invoice can be put on an instalment plan, and an optional '
+            'reward-points programme earns points on every paid order and lets '
+            'customers spend them at checkout.'
         ),
         'features': [
             ('Credit applications and approvals', 'A storefront application form (company, registration and VAT numbers, requested limit and terms, trade references) lands in an admin queue. Approve with a limit and net terms, or reject with a note; the customer is emailed either way and the account is created on approval.'),
@@ -526,7 +534,11 @@ PLUGINS = [
             ('Settlements by any method', 'Record bank transfers, direct debits, cheques, cash, credit notes and write-offs, or send a Stripe pay link for card payment; the signed webhook records the settlement. Allocation is oldest-first or explicit per invoice; overpayment becomes account credit and is applied to the next invoices automatically.'),
             ('Statements with aging', 'Per-account statements for any period: opening balance, every charge and payment, closing balance, and aging buckets (current, 1–30, 31–60, 61–90, 90+). HTML for the admin and the customer, emailed monthly on the statement day.'),
             ('Reminders, late fees, auto-suspend', 'A daily run sends reminders before, on and after the due date on a schedule you set per channel, applies a monthly late fee pro rata if configured, and suspends accounts that go more than N days overdue — reactivate with one click once they pay.'),
-            ('Customer-facing REST API', '`/business-credit/my/*` gives your storefront the account summary, invoices, statements and pay links for the signed-in customer, plus the application form. Works with Qwik, Next.js, Remix or plain fetch.'),
+            ('Prepaid funds', 'Customers top up by card from the storefront or you record a deposit; the money is held on the account and settles invoices and new on-account orders automatically. Prepaid-only accounts work with a zero credit limit.'),
+            ('Company accounts, invitations and auto-approval', 'One account, several logins: owners add colleagues as buyers or viewers. Invite a business by email straight to an approved limit. Applications that meet your rules — company number, order history, spend — are approved on the spot. Every account carries a review date.'),
+            ('Payment plans', 'Split an outstanding invoice into instalments with their own due dates; reminders and overdue logic follow the plan, late fees pause, and customers can request a plan from their account.'),
+            ('Reward points', 'An optional loyalty programme per channel: points per pound with tiers and multipliers, redeemed at checkout as a discount, with expiry, adjustments, statements and a customer points page.'),
+            ('Customer-facing REST API', '`/business-credit/my/*` gives your storefront the account summary, funds, invoices, statements, pay links, team members, invitations, payment-plan requests and reward points for the signed-in customer, plus the application form. Works with Qwik, Next.js, Remix or plain fetch.'),
             ('Admin dashboard', 'Overview (exposure, overdue, credit held, due this week, aging), Accounts with a full detail panel, Applications queue, Invoices, Settlements, Settings with email preview and a run-now button, plus the Licence & billing card. Light and dark themes.'),
         ],
         'endpoints': [
@@ -546,6 +558,13 @@ PLUGINS = [
             ('POST', '/business-credit/my/apply',                  'Shop: apply for a credit account'),
             ('GET',  '/business-credit/my/invoices',               'Shop: my invoices'),
             ('POST', '/business-credit/my/invoices/pay-link',      'Shop: pay selected invoices by card'),
+            ('POST', '/business-credit/my/top-up',                 'Shop: add prepaid funds by card'),
+            ('POST', '/business-credit/my/members',                'Shop: add a colleague to the company account'),
+            ('POST', '/business-credit/my/invitations/accept',     'Shop: accept an invitation to an approved account'),
+            ('POST', '/business-credit/invitations',               'Admin: invite a business by email'),
+            ('POST', '/business-credit/invoices/:id/plan',         'Admin: put an invoice on an instalment plan'),
+            ('POST', '/business-credit/my/loyalty/redeem',         'Shop: spend reward points on the active order'),
+            ('GET',  '/business-credit/loyalty/stats',             'Admin: points outstanding, earned and redeemed'),
         ],
     },
     {
@@ -1055,10 +1074,10 @@ TICK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="
 def index_page():
     short_features = {
         'business-credit': [
-            'Credit applications, limits + audit trail',
-            'Pay on Account handler with net-terms invoices',
-            'Settlements by bank, card, DD, cheque or credit note',
-            'Statements, aging, reminders, late fees, auto-suspend',
+            'Applications, invitations, auto-approval, company accounts',
+            'Pay on Account with net-terms invoices + prepaid funds',
+            'Settlements by any method, Stripe pay links, payment plans',
+            'Statements, dunning, late fees + a reward-points programme',
         ],
         'checkout-guard': [
             'Stripe manual-capture holds that place the order',
@@ -1128,7 +1147,7 @@ def index_page():
         ['MySQL / MariaDB / PostgreSQL', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
         ['Licence activation in the admin', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
         ['One-click in-app updates', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
-        ['Database tables', '4', '2', '1', '2', '8', '5', '3', '8'],
+        ['Database tables', '4', '2', '1', '2', '8', '5', '3', '14'],
         ['Privacy controls', 'Signed links, no tracking pixels', 'IP hash', 'IP allowlist', 'DNT, IP anonymisation, consent gate', 'Allowlist bypass', 'Opt-out + exclusions', 'Session-bound order access', 'Customer-scoped API, no card data stored'],
         ['Offline licence verification', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes'],
         ['Self-hosted (no calls to us at runtime)', 'yes', 'yes', 'yes', 'yes', 'yes-note', 'yes-note', 'yes', 'yes'],
