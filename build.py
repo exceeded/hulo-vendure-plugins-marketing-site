@@ -181,6 +181,28 @@ ROUTE_PREFIX = {
     'review-requests': '/review-requests',
 }
 
+# What the free tier includes vs what needs a key (from each package README).
+TIERS = {'business-credit': (['Accounts and credit limits with the audit trail', 'Pay-on-Account handler and eligibility checker', 'Invoices, manual settlements and allocation, the ledger', 'Statements (view), review dates, the admin dashboard'], ['Stripe card pay links and top-ups', 'Reminders, dunning emails, late fees, auto-suspend', 'Statement emails and CSV exports', 'Storefront applications, invitations, auto-approval', 'Company members, payment plans, reward points']), 'checkout-guard': (['Session-bound order lookup and trusted client IP', 'Rate limits and funnel events', 'Bank-transfer handler and eligibility checker', 'The dashboard'], ['Stripe manual-capture hold handling', 'Bank-transfer auto-expiry and reminders', 'Failed-payment recording and nightly reconciliation', 'Amount-drift guard and ops alerts']), 'fraud-prevention': (['Monitor mode: every order scored and logged', 'Manual allow / block lists', 'Simulate a rule change before enforcing it'], ['Enforce mode and review-queue holds', 'Threat-feed sync (FireHOL, Spamhaus, Tor, disposable email)', 'Email alerts']), 'review-requests': (['Configure per channel, preview the email', 'Test-send to yourself'], ['Scheduled sending after every order', 'Exclusions, cooldown and one-click unsubscribe in production']), 'quotations': (['Quote builder with live catalogue pricing', 'Previews and drafts'], ['Sending the signed accept / decline link', 'Auto-chasers, expiry reminders and auto-expiry', 'Accepted quote to draft order']), 'geo-block': (['Configure regions, rules and allowlists', '"What-if" simulator and audit log in the admin'], ['Live enforcement: the storefront endpoint reports the real decision (free tier always answers enabled: false)']), 'visitor-analytics': (['Tracking and data collection with the storefront helpers', 'Privacy controls (DNT, IP anonymisation, consent gate)'], ['Dashboards, funnels, exit pages and search analytics (403 on the free tier)', 'Product recommendations and abandoned-cart recovery links'])}
+# Plugins currently shown in Vendure's own plugin directory.
+VENDURE_DIRECTORY_LISTED = ['email-tracking', 'fraud-prevention', 'geo-block', 'quotations', 'review-requests', 'visitor-analytics']
+# Plugins that register TypeORM entities and therefore need a migration; the
+# others create their tables on boot.
+NEEDS_MIGRATION = ['email-tracking', 'geo-block', 'visitor-analytics']
+
+_DOWNLOADS_CACHE: dict = {}
+def npm_downloads_last_month(pkg: str):
+    """Monthly download count from the npm registry, or None."""
+    if pkg in _DOWNLOADS_CACHE:
+        return _DOWNLOADS_CACHE[pkg]
+    try:
+        import urllib.request, json as _json
+        with urllib.request.urlopen(f'https://api.npmjs.org/downloads/point/last-month/{pkg}', timeout=8) as r:
+            n = _json.load(r).get('downloads')
+    except Exception:
+        n = None
+    _DOWNLOADS_CACHE[pkg] = n
+    return n
+
 def common_endpoints(slug: str):
     pre = ROUTE_PREFIX.get(slug, '/' + slug)
     return [
@@ -720,6 +742,8 @@ HEADER = '''<!DOCTYPE html>
 @media (prefers-reduced-motion: reduce) {{
   *, *::before, *::after {{ animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }}
 }}
+.vp-proof-item {{ display:inline-flex; align-items:center; gap:.4rem; }} .vp-proof-item::before {{ content:""; width:6px; height:6px; border-radius:999px; background:#22c55e; display:inline-block; }} a.vp-proof-item {{ text-decoration:underline; text-underline-offset:2px; }}
+.vp-tier-list {{ list-style:none; padding:0; margin:0; }} .vp-tier-list li {{ position:relative; padding-left:1.4rem; margin:.45rem 0; font-size:.95rem; color:#334155; line-height:1.5; }} .vp-tier-list li::before {{ content:"✓"; position:absolute; left:0; color:#16a34a; font-weight:700; }}
 .vp-hero {{ position: relative; background: linear-gradient(to bottom, var(--color-ink-50, #f8fafc) 0%, #fff 100%); }}
 .vp-hero::before {{ content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .35; background-image: radial-gradient(ellipse 70% 50% at 50% 0%, var(--color-accent-100, #fde68a), transparent 60%); }}
 /* Corporate brand mark — sits at the top of every hero. Small,
@@ -1072,6 +1096,14 @@ TICK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="
 
 
 def index_page():
+    def card_meta(p):
+        bits = []
+        dl = npm_downloads_last_month(p['pkg'])
+        if dl:
+            bits.append(f'{dl:,} downloads/mo')
+        if p['slug'] in VENDURE_DIRECTORY_LISTED:
+            bits.append('<a href="https://docs.vendure.io/plugins" class="underline underline-offset-2">Vendure directory</a>')
+        return ('<p class="mt-3 text-xs text-ink-500">' + ' · '.join(bits) + '</p>') if bits else ''
     short_features = {
         'business-credit': [
             'Applications, invitations, auto-approval, company accounts',
@@ -1135,6 +1167,7 @@ def index_page():
   <p class="vp-card-tagline">{html.escape(p['tagline'])}</p>
   <ul>{feats_html}</ul>
   <div class="vp-card-actions">
+    {card_meta(p)}
     <a href="/vendure-plugins/{p['slug']}/" class="btn btn-primary text-sm" style="padding:.6rem 1.2rem">Learn more →</a>
     <a href="/vendure-plugins/{p['slug']}/changelog/" class="ml-auto" title="Changelog"><!--email_off--><span class="text-xs text-ink-500 font-mono hover:underline" data-hulo-pkg="{html.escape(p['pkg'])}" data-hulo-version-prefix="v">v{p['version']}</span><!--/email_off--></a>
   </div>
@@ -1373,11 +1406,52 @@ export const config: VendureConfig = {{
         ('How do updates work?',
          f'The plugin checks the npm registry daily. When a newer version exists, the admin dashboard shows an update banner with a What\'s-new link to the <a class="underline underline-offset-2" href="/vendure-plugins/{p["slug"]}/changelog/">changelog</a> and an "Update now" button that installs the registry-verified release via your own package manager and gracefully restarts under your process supervisor. Prefer manual control? Copy the install command instead, or set <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">HULO_SELF_UPDATE=off</code>.'),
         ('Where is data stored?',
-         'In your Vendure database. The plugin adds its own tables via a migration — your data never leaves your server.'),
+         'In your Vendure database. The plugin adds its own tables (created on boot, or via a migration for the plugins that register entities) — your data never leaves your server.'),
         ('Will it survive a Vendure upgrade?',
          f'Tested against Vendure <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">&gt;=3.5.0 &lt;4.0.0</code> — 3.5, 3.6 and 3.7 are all covered by CI. A boot-time compatibility check emits a non-fatal warning if <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">@vendure/core</code> is outside that range, so upgrades to a future 3.x are safe to try. The 4.0 line will be tested and re-declared once its changelog lands.'),
     ]
     faq_html = '\n'.join(f'<details><summary>{html.escape(q)}</summary><p>{a}</p></details>' for q, a in faqs)
+
+    # Proof strip under the tagline: real numbers only.
+    proof_items = []
+    dl = npm_downloads_last_month(p['pkg'])
+    if dl:
+        proof_items.append(f'<a href="https://www.npmjs.com/package/{p["pkg"]}" class="vp-proof-item">{dl:,} npm downloads last month</a>')
+    if p['slug'] in VENDURE_DIRECTORY_LISTED:
+        proof_items.append('<a href="https://docs.vendure.io/plugins" class="vp-proof-item">Listed in the Vendure plugin directory</a>')
+    proof_items.append('<span class="vp-proof-item">Vendure 3.5 – 3.7</span>')
+    proof_items.append('<span class="vp-proof-item">MySQL · MariaDB · PostgreSQL</span>')
+    proof_items.append('<span class="vp-proof-item">AGPL source + commercial licence</span>')
+    proof_html = '<div class="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-600">' + ''.join(proof_items) + '</div>'
+
+    tiers = TIERS.get(p['slug'])
+    tiers_html = ''
+    if tiers:
+        free_li = ''.join(f'<li>{html.escape(t)}</li>' for t in tiers[0])
+        paid_li = ''.join(f'<li>{html.escape(t)}</li>' for t in tiers[1])
+        tiers_html = f'''
+<section class="vp-section bg-white">
+<div class="container-page max-w-3xl">
+<p class="text-sm font-semibold uppercase tracking-wider text-accent-600">Free tier vs licensed</p>
+<h2 class="mt-3 text-3xl md:text-4xl font-bold tracking-tight text-ink-900">Try the whole thing, keep the core for free.</h2>
+<p class="mt-4 text-ink-600">Install without a key and everything on the left works indefinitely. The 14-day trial switches the right-hand column on with your real traffic; a licence keeps it on.</p>
+<div class="mt-8 grid gap-6 md:grid-cols-2">
+<div class="rounded-lg border border-ink-200 bg-white p-6"><p class="text-xs font-semibold uppercase tracking-wider text-ink-500">Free, no key</p><ul class="vp-tier-list mt-3">{free_li}</ul></div>
+<div class="rounded-lg border border-accent-300 bg-accent-50 p-6"><p class="text-xs font-semibold uppercase tracking-wider text-accent-700">Trial + licensed</p><ul class="vp-tier-list mt-3">{paid_li}</ul><a href="{BUY_BASE}/{pkg_short}?plan=monthly" class="btn btn-primary mt-5">Start 14-day free trial →</a></div>
+</div>
+</div>
+</section>
+'''
+    needs_migration = p['slug'] in NEEDS_MIGRATION
+    step_count = 'Four' if needs_migration else 'Three'
+    migration_step = f'''
+<div class="vp-step mt-10">
+<h3 class="text-xl font-semibold text-ink-900 flex items-center">Run the migration</h3>
+<p class="mt-2 text-ink-600">The plugin registers its own entities. Generate and run the migration like any other:</p>
+<div class="vp-code mt-3">yarn migration:generate Add{p['class']}Tables
+yarn migration:run</div>
+</div>''' if needs_migration else '''
+<div class="mt-10 rounded-lg border border-ink-200 bg-white p-4 text-sm text-ink-700"><strong>No migration to run.</strong> The plugin creates its tables on first boot and upgrades them in place on later versions.</div>'''
 
     body = f'''
 <section class="vp-hero">
@@ -1390,11 +1464,12 @@ export const config: VendureConfig = {{
 </nav>
 <h1 class="max-w-3xl text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-ink-900 leading-[1.04]">{html.escape(p['title'])}</h1>
 <p class="mt-6 max-w-2xl text-lg md:text-xl text-ink-600 leading-relaxed">{html.escape(p['tagline'])}</p>
+{proof_html}
 <div class="mt-8 flex flex-wrap items-center gap-3">
-<a href="{BUY_BASE}/{pkg_short}" class="btn btn-primary">Buy a licence →</a>
+<a href="{BUY_BASE}/{pkg_short}?plan=monthly" class="btn btn-primary">Start 14-day free trial →</a>
+<a href="{BUY_BASE}/{pkg_short}?plan=lifetime" class="btn btn-secondary">Buy lifetime</a>
 <a href="#install" class="btn btn-secondary">Install</a>
 <a href="/vendure-plugins/{short_id}/docs/" class="btn btn-secondary">Read the manual</a>
-<a href="/vendure-plugins/{p['slug']}/changelog/" class="btn btn-secondary">Changelog</a>
 <a href="/vendure-plugins/{p['slug']}/changelog/" class="ml-auto" title="See what changed in each release"><!--email_off--><span class="text-xs text-ink-500 font-mono hover:underline" data-hulo-pkg="{html.escape(p['pkg'])}" data-hulo-version-prefix="v">v{p['version']}</span><!--/email_off--></a>
 </div>
 </div>
@@ -1436,14 +1511,16 @@ export const config: VendureConfig = {{
 <section id="install" class="vp-section bg-ink-50">
 <div class="container-page max-w-3xl" style="counter-reset: step;">
 <p class="text-sm font-semibold uppercase tracking-wider text-accent-600">Install</p>
-<h2 class="mt-3 text-3xl md:text-4xl font-bold tracking-tight text-ink-900">Three steps, five minutes.</h2>
+<h2 class="mt-3 text-3xl md:text-4xl font-bold tracking-tight text-ink-900">{step_count} steps, five minutes.</h2>
 
 <div class="vp-step mt-10">
 <h3 class="text-xl font-semibold text-ink-900 flex items-center">Add the package</h3>
 <p class="mt-2 text-ink-600">Or run the one-line installer that does steps 1–3 for you:</p>
 <div class="vp-code mt-3">curl -sSL https://huloglobal.com/vendure-plugins/{short_id}/install.sh | bash</div>
 <p class="mt-3 text-sm text-ink-500">Prefer to do it by hand?</p>
-<div class="vp-code mt-2">yarn add {p['pkg']}</div>
+<div class="vp-code mt-2">yarn add {p['pkg']}
+<span class="vp-comment"># or</span> npm install {p['pkg']}
+<span class="vp-comment"># or</span> pnpm add {p['pkg']}</div>
 </div>
 
 <div class="vp-step mt-10">
@@ -1453,18 +1530,26 @@ export const config: VendureConfig = {{
 </div>
 
 <div class="vp-step mt-10">
-<h3 class="text-xl font-semibold text-ink-900 flex items-center">Run the migration</h3>
-<p class="mt-2 text-ink-600">The plugin adds its own table(s). Generate + run the migration like any other:</p>
-<div class="vp-code mt-3">yarn migration:generate Add{p['class']}Tables
-yarn migration:run</div>
+<h3 class="text-xl font-semibold text-ink-900 flex items-center">Compile the admin UI</h3>
+<p class="mt-2 text-ink-600">Add the extension to your <code class="font-mono text-sm bg-white px-1.5 py-0.5 rounded border border-ink-200">compileUiExtensions</code> call so the plugin's page appears in the admin:</p>
+<div class="vp-code mt-3"><span class="vp-comment">// compile-admin-ui.ts</span>
+import {{ compileUiExtensions }} from <span class="vp-str">'@vendure/ui-devkit/compiler'</span>;
+import {{ <span class="vp-key">{p['class']}</span> }} from <span class="vp-str">'{p['pkg']}'</span>;
+
+compileUiExtensions({{
+  outputPath: path.join(__dirname, <span class="vp-str">'admin-ui'</span>),
+  extensions: [<span class="vp-key">{p['class']}</span>.uiExtensions],
+}});</div>
 </div>
+{migration_step}
 
 <div class="mt-10 rounded-lg border border-ink-200 bg-white p-6">
-<p class="text-sm text-ink-700"><strong>That's it.</strong> The admin UI tab appears immediately. Without a licence key the plugin runs in a free tier — fine for trying things out. <a href="{BUY_BASE}/{pkg_short}" class="text-accent-600 underline underline-offset-2">Buy a key →</a></p>
+<p class="text-sm text-ink-700"><strong>That's it.</strong> Restart Vendure and the plugin's page is in the admin. Without a key it runs in the free tier; open the page and click <strong>Start 14-day free trial</strong> to switch everything on — the key installs itself, no <code class="font-mono text-sm bg-ink-100 px-1 py-0.5 rounded">.env</code> edit, no redeploy.</p>
 </div>
 </div>
 </section>
 
+{tiers_html}
 <section class="vp-section bg-white">
 <div class="container-page max-w-3xl">
 <p class="text-sm font-semibold uppercase tracking-wider text-accent-600">HTTP endpoints</p>
@@ -1488,9 +1573,10 @@ yarn migration:run</div>
 <section class="vp-section bg-white">
 <div class="container-page max-w-2xl text-center">
 <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-ink-900">Ready to ship?</h2>
-<p class="mt-5 text-lg text-ink-600 leading-relaxed">Buy a key, drop the plugin in, ship today.</p>
+<p class="mt-5 text-lg text-ink-600 leading-relaxed">Install in five minutes, run the trial on real traffic, keep it if it earns its place.</p>
 <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-<a href="{BUY_BASE}/{pkg_short}" class="btn btn-primary">Buy a licence →</a>
+<a href="{BUY_BASE}/{pkg_short}?plan=monthly" class="btn btn-primary">Start 14-day free trial →</a>
+<a href="{BUY_BASE}/{pkg_short}?plan=lifetime" class="btn btn-secondary">Buy lifetime</a>
 <a href="mailto:hello@huloglobal.com?subject=Vendure%20plugin%20enquiry" class="btn btn-secondary">Email us</a>
 </div>
 </div>
@@ -1664,9 +1750,13 @@ else
 fi
 
 echo
-echo "→ Generate + run the migration:"
-echo "  yarn migration:generate Add${{CLASS}}Tables"
-echo "  yarn migration:run"
+if [[ "{needs_migration}" == "1" ]]; then
+  echo "→ Generate + run the migration (this plugin registers entities):"
+  echo "  yarn migration:generate Add${{CLASS}}Tables"
+  echo "  yarn migration:run"
+else
+  echo "→ No migration needed: tables are created on first boot."
+fi
 echo
 echo "→ Set your licence key:"
 echo "  echo '$ENV_VAR=...' >> .env"
@@ -1685,6 +1775,7 @@ def install_sh(p):
         env_var='HULO_LICENCE_KEY_' + p['slug'].upper().replace('-', '_'),
         pkg_short=p['pkg'].split('/')[-1],
         slug=p['slug'],
+        needs_migration='1' if p['slug'] in NEEDS_MIGRATION else '0',
     )
 
 
