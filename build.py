@@ -594,15 +594,14 @@ PLUGINS = [
     {
         'slug': 'payments',
         'pkg': '@huloglobal/vendure-plugin-payments',
-        # Priced to be the easy "yes" next to the free core payment plugins —
-        # must match the currency_options on the Stripe price objects
-        # (created 2026-09-21).
+        # Email-tracking tier (repriced 2026-09-21) — must match the currency_options
+        # on the Stripe price objects.
         'pricing': {
-            'GBP': {'monthly': '£9.95', 'lifetime': '£199', 'symbol': '£', 'label': 'GBP — British pound'},
-            'USD': {'monthly': '$12.95', 'lifetime': '$259', 'symbol': '$', 'label': 'USD — US dollar'},
-            'EUR': {'monthly': '€11.95', 'lifetime': '€239', 'symbol': '€', 'label': 'EUR — Euro'},
-            'AUD': {'monthly': 'A$19.95', 'lifetime': 'A$399', 'symbol': 'A$', 'label': 'AUD — Australian dollar'},
-            'CAD': {'monthly': 'C$17.95', 'lifetime': 'C$359', 'symbol': 'C$', 'label': 'CAD — Canadian dollar'},
+            'GBP': {'monthly': '£6.95', 'lifetime': '£139', 'symbol': '£', 'label': 'GBP — British pound'},
+            'USD': {'monthly': '$8.99', 'lifetime': '$179', 'symbol': '$', 'label': 'USD — US dollar'},
+            'EUR': {'monthly': '€8.49', 'lifetime': '€169', 'symbol': '€', 'label': 'EUR — Euro'},
+            'AUD': {'monthly': 'A$13.95', 'lifetime': 'A$279', 'symbol': 'A$', 'label': 'AUD — Australian dollar'},
+            'CAD': {'monthly': 'C$12.49', 'lifetime': 'C$249', 'symbol': 'C$', 'label': 'CAD — Canadian dollar'},
         },
         'class': 'HuloPaymentsPlugin',
         'version': '0.1.0',
