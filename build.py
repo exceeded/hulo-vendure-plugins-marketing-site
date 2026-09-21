@@ -182,12 +182,12 @@ ROUTE_PREFIX = {
 }
 
 # What the free tier includes vs what needs a key (from each package README).
-TIERS = {'business-credit': (['Accounts and credit limits with the audit trail', 'Pay-on-Account handler and eligibility checker', 'Invoices, manual settlements and allocation, the ledger', 'Statements (view), review dates, the admin dashboard'], ['Stripe card pay links and top-ups', 'Reminders, dunning emails, late fees, auto-suspend', 'Statement emails and CSV exports', 'Storefront applications, invitations, auto-approval', 'Company members, payment plans, reward points']), 'checkout-guard': (['Session-bound order lookup and trusted client IP', 'Rate limits and funnel events', 'Bank-transfer handler and eligibility checker', 'The dashboard'], ['Stripe manual-capture hold handling', 'Bank-transfer auto-expiry and reminders', 'Failed-payment recording and nightly reconciliation', 'Amount-drift guard and ops alerts']), 'fraud-prevention': (['Monitor mode: every order scored and logged', 'Manual allow / block lists', 'Simulate a rule change before enforcing it'], ['Enforce mode and review-queue holds', 'Threat-feed sync (FireHOL, Spamhaus, Tor, disposable email)', 'Email alerts']), 'review-requests': (['Configure per channel, preview the email', 'Test-send to yourself'], ['Scheduled sending after every order', 'Exclusions, cooldown and one-click unsubscribe in production']), 'quotations': (['Quote builder with live catalogue pricing', 'Previews and drafts', 'Storefront quote requests landing in the inbox'], ['Sending the signed accept / decline link', 'Auto-chasers, expiry reminders and auto-expiry', 'Accepted quote to draft order']), 'geo-block': (['Configure regions, rules and allowlists', '"What-if" simulator and audit log in the admin'], ['Live enforcement: the storefront endpoint reports the real decision (free tier always answers enabled: false)']), 'visitor-analytics': (['Tracking and data collection with the storefront helpers', 'Privacy controls (DNT, IP anonymisation, consent gate)'], ['Dashboards, funnels, exit pages and search analytics (403 on the free tier)', 'Product recommendations and abandoned-cart recovery links'])}
+TIERS = {'payments': (['Stripe: sessions, wallets, 3-D Secure, automatic or manual capture, refunds, disputes, signed webhooks', 'The payments ledger, dashboard and webhook log', 'The hulo-payment-rules eligibility checker'], ['Adyen, PayPal and Mollie', 'Subscriptions and the renewal scheduler', 'Saved cards and pay-by-link', 'Provider routing, fallback on decline and surcharges']), 'business-credit': (['Accounts and credit limits with the audit trail', 'Pay-on-Account handler and eligibility checker', 'Invoices, manual settlements and allocation, the ledger', 'Statements (view), review dates, the admin dashboard'], ['Stripe card pay links and top-ups', 'Reminders, dunning emails, late fees, auto-suspend', 'Statement emails and CSV exports', 'Storefront applications, invitations, auto-approval', 'Company members, payment plans, reward points']), 'checkout-guard': (['Session-bound order lookup and trusted client IP', 'Rate limits and funnel events', 'Bank-transfer handler and eligibility checker', 'The dashboard'], ['Stripe manual-capture hold handling', 'Bank-transfer auto-expiry and reminders', 'Failed-payment recording and nightly reconciliation', 'Amount-drift guard and ops alerts']), 'fraud-prevention': (['Monitor mode: every order scored and logged', 'Manual allow / block lists', 'Simulate a rule change before enforcing it'], ['Enforce mode and review-queue holds', 'Threat-feed sync (FireHOL, Spamhaus, Tor, disposable email)', 'Email alerts']), 'review-requests': (['Configure per channel, preview the email', 'Test-send to yourself'], ['Scheduled sending after every order', 'Exclusions, cooldown and one-click unsubscribe in production']), 'quotations': (['Quote builder with live catalogue pricing', 'Previews and drafts', 'Storefront quote requests landing in the inbox'], ['Sending the signed accept / decline link', 'Auto-chasers, expiry reminders and auto-expiry', 'Accepted quote to draft order']), 'geo-block': (['Configure regions, rules and allowlists', '"What-if" simulator and audit log in the admin'], ['Live enforcement: the storefront endpoint reports the real decision (free tier always answers enabled: false)']), 'visitor-analytics': (['Tracking and data collection with the storefront helpers', 'Privacy controls (DNT, IP anonymisation, consent gate)'], ['Dashboards, funnels, exit pages and search analytics (403 on the free tier)', 'Product recommendations and abandoned-cart recovery links'])}
 # Plugins currently shown in Vendure's own plugin directory.
 VENDURE_DIRECTORY_LISTED = ['email-tracking', 'fraud-prevention', 'geo-block', 'quotations', 'review-requests', 'visitor-analytics']
 # Plugins that register TypeORM entities and therefore need a migration; the
 # others create their tables on boot.
-NEEDS_MIGRATION = ['email-tracking', 'geo-block', 'visitor-analytics']
+NEEDS_MIGRATION = ['email-tracking', 'geo-block', 'visitor-analytics', 'payments']
 
 _DOWNLOADS_CACHE: dict = {}
 def npm_downloads_last_month(pkg: str):
@@ -589,6 +589,66 @@ PLUGINS = [
             ('POST', '/business-credit/invoices/:id/plan',         'Admin: put an invoice on an instalment plan'),
             ('POST', '/business-credit/my/loyalty/redeem',         'Shop: spend reward points on the active order'),
             ('GET',  '/business-credit/loyalty/stats',             'Admin: points outstanding, earned and redeemed'),
+        ],
+    },
+    {
+        'slug': 'payments',
+        'pkg': '@huloglobal/vendure-plugin-payments',
+        # Priced to be the easy "yes" next to the free core payment plugins —
+        # must match the currency_options on the Stripe price objects
+        # (created 2026-09-21).
+        'pricing': {
+            'GBP': {'monthly': '£9.95', 'lifetime': '£199', 'symbol': '£', 'label': 'GBP — British pound'},
+            'USD': {'monthly': '$12.95', 'lifetime': '$259', 'symbol': '$', 'label': 'USD — US dollar'},
+            'EUR': {'monthly': '€11.95', 'lifetime': '€239', 'symbol': '€', 'label': 'EUR — Euro'},
+            'AUD': {'monthly': 'A$19.95', 'lifetime': 'A$399', 'symbol': 'A$', 'label': 'AUD — Australian dollar'},
+            'CAD': {'monthly': 'C$17.95', 'lifetime': 'C$359', 'symbol': 'C$', 'label': 'CAD — Canadian dollar'},
+        },
+        'class': 'HuloPaymentsPlugin',
+        'version': '0.1.0',
+        'title': 'Payments',
+        'tagline': 'One payments plugin for Vendure: Stripe, Adyen, PayPal and Mollie behind a single contract — sessions, wallets, 3-D Secure, captures, refunds, disputes, saved cards, subscriptions, pay-by-link, routing and a ledger with a dashboard.',
+        'description': (
+            'Vendure ships a Stripe plugin, a Mollie plugin and a Braintree plugin, each '
+            'with its own shape, its own gaps and no view across them. Payments gives '
+            'you four providers behind one contract: the storefront asks which to '
+            'offer and gets a session; the provider\'s client renders cards, Apple Pay, '
+            'Google Pay, iDEAL, Klarna and the rest; the plugin verifies the result '
+            'with the provider before Vendure records the payment. Manual capture, '
+            'partial captures and refunds work the same way on every provider. '
+            'Webhooks are signature-checked and idempotent, disputes land in the '
+            'ledger and alert ops, signed-in customers can save a card, any product '
+            'variant can become a subscription (billed natively by Stripe, PayPal or '
+            'Mollie, or by the plugin\'s scheduler from an Adyen token), and any '
+            'unpaid order can be settled by a payment link. Provider order, fallback '
+            'on decline, eligibility rules and surcharges are per channel. Everything '
+            'lands in one ledger with a dashboard under Sales → Payments.'
+        ),
+        'features': [
+            ('Four providers, one contract', 'Stripe (Payment Intents + Payment Element), Adyen (Sessions + Drop-in), PayPal (Orders v2) and Mollie (Payments API) as Vendure payment method handlers. Add one per channel in Settings → Payment methods; the storefront code is the same for all four.'),
+            ('Wallets and local methods included', 'Apple Pay, Google Pay, Link, iDEAL, Bancontact, Klarna, SEPA, PayPal, Venmo and Pay Later — whatever each provider enables shows up in its hosted element with 3-D Secure handled by the provider.'),
+            ('Verified server-side', 'The storefront never decides a payment state. The plugin re-reads the intent, session or order from the provider and checks amount, currency and order code before addPaymentToOrder.'),
+            ('Capture control', 'Automatic or manual capture per method, partial captures, cancels, full and partial refunds — all from the normal Vendure order and refund screens.'),
+            ('Signed, idempotent webhooks', 'Stripe signatures, Adyen HMAC and basic auth, PayPal signature verification, Mollie fetch-back. Duplicate deliveries are ignored; payments, refunds and subscriptions are updated; a webhook log shows every delivery.'),
+            ('Disputes', 'Chargebacks and reversals from any provider land in the ledger with their reason and alert ops by webhook or email.'),
+            ('Saved cards', 'Stripe Customers and Adyen stored payment methods for signed-in customers, listed and removed through the shop API.'),
+            ('Subscriptions', 'Set a billing interval on any product variant. The order charges the first period; Stripe, PayPal and Mollie bill natively, Adyen renewals are charged by the plugin from the stored card. Dunning, MRR, customer self-service cancel, admin pause / resume / cancel.'),
+            ('Pay by link', 'One click creates a provider-hosted payment link for any unpaid order — draft orders, accepted quotes, phone orders — and the webhook settles it.'),
+            ('Routing, rules and surcharges', 'Provider order per channel with fallback on decline, an eligibility checker (amount band, currencies, countries, customer groups, signed-in only) for any payment method, and optional per-provider surcharges.'),
+            ('One ledger, one dashboard', 'Authorisations, captures, refunds, disputes, failures, renewals and pay-links by provider and day, success rate, subscriptions and settings under Sales → Payments. Light and dark themes.'),
+            ('No SDKs, PostgreSQL ready', 'Each provider is a handful of REST calls on the platform fetch; tables are created on boot on MySQL, MariaDB and PostgreSQL.'),
+        ],
+        'endpoints': [
+            ('POST', '/hulo-payments/webhook/:provider', 'Provider webhooks (hulo-stripe, hulo-adyen, hulo-paypal, hulo-mollie)'),
+            ('GET',  '/hulo-payments/dashboard',         'Admin: KPIs by provider and day, subscriptions'),
+            ('GET',  '/hulo-payments/transactions',      'Admin: the ledger, filterable'),
+            ('GET',  '/hulo-payments/providers',         'Admin: configured methods, capabilities, webhook URLs'),
+            ('GET',  '/hulo-payments/subscriptions',     'Admin: subscriptions (cancel / pause / resume actions)'),
+            ('POST', '/hulo-payments/pay-link',          'Admin: payment link for an unpaid order (licensed)'),
+            ('GET',  '/hulo-payments/settings',          'Admin: routing, surcharges, ops per channel'),
+            ('GQL',  'huloPaymentProviders',             'Shop: providers to offer for the active order'),
+            ('GQL',  'huloCreatePaymentSession',         'Shop: client secret / session / checkout URL'),
+            ('GQL',  'huloMySubscriptions',              'Shop: the customer\'s subscriptions (+ cancel)'),
         ],
     },
     {
