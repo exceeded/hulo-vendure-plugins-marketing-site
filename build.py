@@ -1173,6 +1173,12 @@ def index_page():
             'Settlements by any method, Stripe pay links, payment plans',
             'Statements, dunning, late fees + a reward-points programme',
         ],
+        'payments': [
+            'Stripe, Adyen, PayPal + Mollie behind one contract',
+            'Wallets, 3-D Secure, manual capture, refunds, disputes',
+            'Subscriptions, saved cards + pay-by-link',
+            'Routing, rules, surcharges + one ledger dashboard',
+        ],
         'checkout-guard': [
             'Stripe manual-capture holds that place the order',
             'Bank transfer with auto-expiry + reminders',
@@ -1297,6 +1303,7 @@ def index_page():
         'fraud-prevention':  ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'review-requests':   ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'checkout-guard':    ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
+        'payments':          ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
         'business-credit':   ('3.5 – 3.7', '20 LTS+', '5.4 – 6.x'),
     }
     compat_rows_html = ''
