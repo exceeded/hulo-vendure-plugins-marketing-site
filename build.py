@@ -1329,7 +1329,7 @@ def index_page():
         ('Do the plugins call home?', 'No — licence verification is offline. Each plugin verifies the JWT at boot against an embedded public key. A revocation list is polled once a week (cached, soft-fail), so a brief outage at our end never disables your store. Nothing else leaves your server.'),
         ('Where does customer data live?', 'On your Vendure server — same DB as the rest of your data. No third-party analytics provider. The visitor-analytics plugin\'s ingest endpoint is on your domain.'),
         ('What if I don\'t buy a licence?', 'Plugins still boot in a free tier — install, configure, browse data, and the admin UI is functional. The public storefront endpoints are limited (geo-block always reports `enabled:false`; visitor-analytics dashboards return 403). Buy a key when you\'re ready.'),
-        ('Can I see the source?', 'Yes — all five are on GitHub under <a class="underline underline-offset-2" href="https://github.com/exceeded">github.com/exceeded</a>. MIT-style licence on the code itself, separate paid licence for production use.'),
+        ('Can I see the source?', 'Yes — every plugin is on GitHub under <a class="underline underline-offset-2" href="https://github.com/huloglobal">github.com/huloglobal</a> and <a class="underline underline-offset-2" href="https://github.com/exceeded">github.com/exceeded</a>. MIT-style licence on the code itself, separate paid licence for production use.'),
         ('Do they work on Vendure 2.x?', 'They target Vendure 3.x (3.0+). Vendure 2.x isn\'t supported because we use some of the 3.x customField improvements.'),
     ]
     faq_html = '\n'.join(f'<details><summary>{html.escape(q)}</summary><p>{a}</p></details>' for q, a in faqs)
