@@ -1,0 +1,16 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HULO Business Credit">
+  <title>HULO Business Credit</title>
+  <!-- HULO family frame: navy rounded square -->
+  <rect width="64" height="64" rx="14" fill="#0f1419"/>
+  <!-- Ledger / invoice sheet -->
+  <path d="M15 12 H41 L49 20 V52 H15 Z" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M41 12 V20 H49" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linejoin="round"/>
+  <!-- Ledger lines -->
+  <path d="M21 27 H37" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity="0.55"/>
+  <path d="M21 33 H43" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity="0.55"/>
+  <path d="M21 39 H33" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity="0.55"/>
+  <!-- Amber credit badge: coin with a rising terms arrow -->
+  <circle cx="45" cy="44" r="11.5" fill="#0f1419" stroke="#f59e0b" stroke-width="2.6"/>
+  <path d="M39.5 48 L44 43.5 L46.5 46 L51 40.5" fill="none" stroke="#f59e0b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M47.5 40.5 H51 V44" fill="none" stroke="#f59e0b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
