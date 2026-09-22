@@ -1202,7 +1202,7 @@ PAYMENTS_MANUAL = {
     'title_short': 'Payments',
     'sections': [
         ('overview', 'Overview', '''
-<p><strong>Payments</strong> puts Stripe, Adyen, PayPal and Mollie behind one contract. The storefront asks which providers to offer and gets a session; the provider's own client renders cards, Apple Pay, Google Pay, iDEAL, Klarna and the rest with 3-D Secure handled by the provider; the plugin re-reads the result from the provider (amount, currency, order code) before Vendure records the payment. Automatic or manual capture, partial captures and refunds, disputes, saved cards, subscriptions, pay-by-link, routing rules and surcharges work the same way on every provider, and everything lands in one ledger with a dashboard under <strong>Sales → Payments</strong>.</p>
+<p><strong>Payments</strong> puts eleven payment systems — Stripe, Adyen, PayPal, Mollie, Square, Braintree, GoCardless, Checkout.com, Coinbase Commerce, bank transfer and pay-later — behind one contract, and serves a hosted checkout page so a storefront needs no provider code at all. The storefront asks which providers to offer and gets a session; the provider's own client renders cards, Apple Pay, Google Pay, iDEAL, Klarna and the rest with 3-D Secure handled by the provider; the plugin re-reads the result from the provider (amount, currency, order code) before Vendure records the payment. Automatic or manual capture, partial captures and refunds, disputes, saved cards, subscriptions, pay-by-link, routing rules and surcharges work the same way on every provider, and everything lands in one ledger with a dashboard under <strong>Sales → Payments</strong>.</p>
 '''),
         ('install', 'Install & configure', '''
 <pre><code>yarn add @huloglobal/vendure-plugin-payments</code></pre>
@@ -1224,10 +1224,21 @@ plugins: [
 <tr><td>Adyen</td><td>API key, merchant account, client key, live URL prefix (live only)</td><td>Customer Area → Developers → API credentials; Account → Merchant accounts</td></tr>
 <tr><td>PayPal</td><td>Client ID, client secret</td><td>developer.paypal.com → Apps &amp; Credentials → REST app</td></tr>
 <tr><td>Mollie</td><td>API key</td><td>Dashboard → Developers → API keys</td></tr>
+<tr><td>Square</td><td>Access token, application ID, location ID</td><td>developer.squareup.com → your app → Credentials / Locations</td></tr>
+<tr><td>Braintree</td><td>Merchant ID, public key, private key</td><td>Control Panel → Settings → API</td></tr>
+<tr><td>GoCardless</td><td>Access token (+ webhook secret)</td><td>Dashboard → Developers → Access tokens / Webhook endpoints</td></tr>
+<tr><td>Checkout.com</td><td>Secret key, public key, processing channel ID</td><td>Dashboard → Developers → Keys; Settings → Channels</td></tr>
+<tr><td>Coinbase Commerce</td><td>API key (+ webhook shared secret)</td><td>Settings → Security / Notifications</td></tr>
+<tr><td>Bank transfer</td><td>Account name, sort code / account number or IBAN</td><td>Your bank</td></tr>
+<tr><td>Pay later</td><td>Payment terms in days</td><td>—</td></tr>
 </tbody></table>
 <p>Prefer the standard route? <strong>Settings → Payment methods → Create</strong> and pick the handler <em>HULO Payments — Stripe / Adyen / PayPal / Mollie</em>; every field explains where its value comes from. Attach the <em>HULO Payments rules</em> eligibility checker to any method to limit it by order total, currency, country, customer group or signed-in customers.</p>
 '''),
-        ('storefront', 'Storefront integration', '''
+        ('hosted', 'Hosted checkout page (simplest)', '''
+<pre><code>mutation { huloHostedCheckout(returnUrl: "https://shop.example.com/checkout/return", cancelUrl: "https://shop.example.com/checkout") { url expiresAt } }</code></pre>
+<p>Redirect the customer to <code>url</code>. The page lists every enabled method in the order set under Settings, drives each provider's own client (cards, wallets, redirects, bank-transfer instructions), records the payment through Vendure and sends the customer back to <code>returnUrl?order=CODE&amp;result=paid|pending</code>. Brand it (shop name, colour, logo) under <strong>Settings → Hosted checkout page</strong>. Links are single-use and expire after two hours.</p>
+'''),
+        ('storefront', 'Embedded integration (advanced)', '''
 <pre><code># 1. Providers to offer for the active order (preferred first)
 query { huloPaymentProviders { methodCode provider name publicConfig capabilities surcharge preferred } }
 
