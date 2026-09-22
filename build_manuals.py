@@ -1085,7 +1085,10 @@ plugins: [
 <tr><td>Remittance text</td><td>Your bank details, shown on invoices, emails and the confirmation page.</td></tr>
 </table>
 '''),
-        ('admin', 'Admin UI', '''
+                ('requests', 'Quote requests from your storefront', '''
+<p>Customers can ask for a quote from a basket, a product page, a calculator or a plain form: post JSON to <code>POST /quotations/request</code> with the channel's <code>vendure-token</code> header (name, email, company, phone, message, source and optional lines by variant id or SKU). The request lands under <strong>Sales → Quotations</strong> as <em>requested</em> with catalogue lines pre-priced at list, the notify address hears about it, and the customer receives an acknowledgement carrying the reference. Price any free-text lines, then <strong>Send to customer</strong>. Turn requests off per channel in Settings; the endpoint is throttled and honeypot-protected.</p>
+'''),
+('admin', 'Admin UI', '''
 <p><strong>Sales → Business credit</strong>.</p>
 <ul>
 <li><strong>Overview</strong> — total exposure, overdue, credit held, due in the next seven days, pending applications, aging buckets and the ten largest exposures.</li>
@@ -1194,6 +1197,79 @@ plugins: [
 }
 
 
+PAYMENTS_MANUAL = {
+    'slug': 'payments',
+    'title_short': 'Payments',
+    'sections': [
+        ('overview', 'Overview', '''
+<p><strong>Payments</strong> puts Stripe, Adyen, PayPal and Mollie behind one contract. The storefront asks which providers to offer and gets a session; the provider's own client renders cards, Apple Pay, Google Pay, iDEAL, Klarna and the rest with 3-D Secure handled by the provider; the plugin re-reads the result from the provider (amount, currency, order code) before Vendure records the payment. Automatic or manual capture, partial captures and refunds, disputes, saved cards, subscriptions, pay-by-link, routing rules and surcharges work the same way on every provider, and everything lands in one ledger with a dashboard under <strong>Sales → Payments</strong>.</p>
+'''),
+        ('install', 'Install & configure', '''
+<pre><code>yarn add @huloglobal/vendure-plugin-payments</code></pre>
+<pre><code>import { HuloPaymentsPlugin } from '@huloglobal/vendure-plugin-payments';
+
+plugins: [
+  HuloPaymentsPlugin.init({
+    publicBaseUrl: 'https://shop.example.com',          // webhook + return URLs
+    licenceKey: process.env.HULO_LICENCE_KEY_PAYMENTS,   // optional — or activate in the admin
+    ops: { email: 'ops@example.com', webhookUrl: process.env.OPS_SLACK_WEBHOOK },
+  }),
+]</code></pre>
+<p>Add <code>HuloPaymentsPlugin.uiExtensions</code> to <code>compileUiExtensions</code> and recompile the admin UI. Tables are created on boot. The plugin adds three custom fields to <code>ProductVariant</code> for subscriptions, so installs that use migrations need one: <code>npx vendure migrate</code>.</p>
+'''),
+        ('connect', 'Connecting a provider', '''
+<p>Open <strong>Sales → Payments → Providers</strong> and click <strong>Connect</strong> on a provider card. Paste the keys from its dashboard (each card links to the exact page), click <em>Test connection</em> to see which account they belong to, then <em>Connect</em>. The plugin verifies the keys with the provider, registers the webhook through the provider's API and stores the signing secret, and creates the Vendure payment method on the channel you chose. Mollie needs no webhook setup; Adyen creates the webhook and HMAC key when the API credential has the Management API webhook role, otherwise the card tells you exactly what to add by hand.</p>
+<table><thead><tr><th>Provider</th><th>What to paste</th><th>Where it comes from</th></tr></thead><tbody>
+<tr><td>Stripe</td><td>Secret key, publishable key</td><td>Dashboard → Developers → API keys (test or live pair)</td></tr>
+<tr><td>Adyen</td><td>API key, merchant account, client key, live URL prefix (live only)</td><td>Customer Area → Developers → API credentials; Account → Merchant accounts</td></tr>
+<tr><td>PayPal</td><td>Client ID, client secret</td><td>developer.paypal.com → Apps &amp; Credentials → REST app</td></tr>
+<tr><td>Mollie</td><td>API key</td><td>Dashboard → Developers → API keys</td></tr>
+</tbody></table>
+<p>Prefer the standard route? <strong>Settings → Payment methods → Create</strong> and pick the handler <em>HULO Payments — Stripe / Adyen / PayPal / Mollie</em>; every field explains where its value comes from. Attach the <em>HULO Payments rules</em> eligibility checker to any method to limit it by order total, currency, country, customer group or signed-in customers.</p>
+'''),
+        ('storefront', 'Storefront integration', '''
+<pre><code># 1. Providers to offer for the active order (preferred first)
+query { huloPaymentProviders { methodCode provider name publicConfig capabilities surcharge preferred } }
+
+# 2. A session for the active order
+mutation { huloCreatePaymentSession(methodCode: "stripe", options: { returnUrl: "https://shop.example.com/checkout/return" }) {
+  provider clientSecret sessionId sessionData checkoutUrl publicKey environment config amount currency } }
+
+# 3. After the provider's client reports success — the normal Vendure step
+mutation { addPaymentToOrder(input: { method: "stripe", metadata: { paymentIntentId: "pi_…" } }) { ... on Order { state } ... on ErrorResult { message } } }</code></pre>
+<table><thead><tr><th>Provider</th><th>Client</th><th>metadata for addPaymentToOrder</th></tr></thead><tbody>
+<tr><td>Stripe</td><td>Payment Element with <code>clientSecret</code></td><td><code>{ paymentIntentId }</code></td></tr>
+<tr><td>Adyen</td><td>Drop-in with <code>sessionId</code> + <code>sessionData</code></td><td><code>{ sessionId, sessionResult }</code></td></tr>
+<tr><td>PayPal</td><td>Buttons, <code>createOrder: () => sessionId</code></td><td><code>{ paypalOrderId }</code></td></tr>
+<tr><td>Mollie</td><td>Redirect to <code>checkoutUrl</code></td><td><code>{ molliePaymentId }</code></td></tr>
+</tbody></table>
+<p>Also available: <code>huloSavedPaymentMethods</code>, <code>huloRemoveSavedPaymentMethod</code>, <code>huloMySubscriptions</code>, <code>huloCancelSubscription</code> and <code>huloApplyPaymentSurcharge</code>.</p>
+'''),
+        ('subscriptions', 'Subscriptions', '''
+<p>Set <strong>Subscription billing interval</strong> (daily / weekly / monthly / yearly), optionally <em>every N intervals</em> and <em>free trial days</em>, on a product variant. Its price is the price per period. When an order containing it is paid through a HULO method the plugin creates the subscription: Stripe, PayPal and Mollie bill natively; Adyen renewals are charged hourly by the plugin's scheduler from the stored card. Failed renewals mark the subscription past due, alert ops and cancel after the number of failed daily attempts set in Settings. Customers see and cancel their subscriptions through the shop API; admins pause, resume and cancel from the Subscriptions tab, which also shows MRR.</p>
+'''),
+        ('paylink', 'Pay by link', '''
+<p>From the <strong>Pay by link</strong> tab, enter any order code that still needs payment — a draft order built in the admin, an accepted quotation, a phone order — pick a provider and an expiry, and copy the link. The customer pays on the provider's hosted page and the webhook moves the order to PaymentSettled.</p>
+'''),
+        ('admin', 'Admin UI', '''
+<p><strong>Sales → Payments</strong>: Overview (volume by day and provider, success rate, refunds, disputes, subscriptions), Transactions (the ledger, filterable by kind, status and order), Subscriptions, Pay by link, Providers (Connect, capabilities, webhook URLs, recent webhook deliveries) and Settings (provider order and fallback, saved cards, surcharges, ops email, dunning), plus the Licence &amp; billing card. Refunds are issued from the order page as usual and appear in the ledger automatically.</p>
+'''),
+        ('licensing', 'Licensing & tiers', '''
+<p>Free tier: Stripe (sessions, wallets, 3-D Secure, captures, refunds, disputes, signed webhooks), the ledger, the dashboard and the rules checker. <strong>Adyen, PayPal, Mollie, subscriptions, saved cards, pay-by-link, provider routing and surcharges require a licence.</strong> Unlicensed installs run everything for 14 days; start the card-backed trial or buy from the admin banner.</p>
+'''),
+        ('troubleshooting', 'Troubleshooting', '''
+<ul>
+<li><strong>Payment shows Authorized but never Settled:</strong> for automatic-capture methods that means the provider is still processing or the webhook is not arriving — check the Providers tab's webhook log and the endpoint in the provider dashboard. Manual-capture payments are settled from the order page.</li>
+<li><strong>Webhook returns 400 "signature mismatch":</strong> the secret on the payment method is not the one for that endpoint. Reconnect the provider from the Providers tab; it re-registers the webhook and stores the fresh secret.</li>
+<li><strong>Webhook returns 404 "no enabled … payment method":</strong> the method for that provider is disabled or missing on every channel.</li>
+<li><strong>Adyen payment stays Authorized with transaction "adyen-session:…":</strong> the AUTHORISATION webhook has not been received yet; it carries the pspReference and settles immediate-capture methods.</li>
+<li><strong>Subscription never created:</strong> subscriptions need a licence, the variant needs a billing interval, and the first payment must have gone through a HULO method that supports subscriptions.</li>
+</ul>
+'''),
+    ],
+}
+
+
 def render_manual(m):
     canonical = f'https://huloglobal.com/vendure-plugins/{m["slug"]}/docs/'
     head = DOC_HEAD.format(
@@ -1221,7 +1297,7 @@ def render_manual(m):
 
 
 def main():
-    for m in (BUSINESS_CREDIT_MANUAL, CHECKOUT_GUARD_MANUAL, QUOTATIONS_MANUAL, EMAIL_TRACKING_MANUAL, GEO_BLOCK_MANUAL, VISITOR_ANALYTICS_MANUAL, FRAUD_PREVENTION_MANUAL, REVIEW_REQUESTS_MANUAL):
+    for m in (PAYMENTS_MANUAL, BUSINESS_CREDIT_MANUAL, CHECKOUT_GUARD_MANUAL, QUOTATIONS_MANUAL, EMAIL_TRACKING_MANUAL, GEO_BLOCK_MANUAL, VISITOR_ANALYTICS_MANUAL, FRAUD_PREVENTION_MANUAL, REVIEW_REQUESTS_MANUAL):
         d = OUT / m['slug'] / 'docs'
         d.mkdir(parents=True, exist_ok=True)
         (d / 'index.html').write_text(render_manual(m), encoding='utf-8')
