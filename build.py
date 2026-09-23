@@ -185,6 +185,8 @@ ROUTE_PREFIX = {
 TIERS = {'payments': (['Stripe: sessions, wallets, 3-D Secure, automatic or manual capture, refunds, disputes, signed webhooks', 'Bank transfer and pay-later / invoice methods', 'The hosted checkout page', 'The payments ledger, dashboard and webhook log', 'The hulo-payment-rules eligibility checker'], ['Adyen, PayPal, Mollie, Square, Braintree, GoCardless, Checkout.com and Coinbase Commerce', 'Subscriptions and the renewal scheduler', 'Saved cards and pay-by-link', 'Provider routing, fallback on decline and surcharges']), 'business-credit': (['Accounts and credit limits with the audit trail', 'Pay-on-Account handler and eligibility checker', 'Invoices, manual settlements and allocation, the ledger', 'Statements (view), review dates, the admin dashboard'], ['Stripe card pay links and top-ups', 'Reminders, dunning emails, late fees, auto-suspend', 'Statement emails and CSV exports', 'Storefront applications, invitations, auto-approval', 'Company members, payment plans, reward points']), 'checkout-guard': (['Session-bound order lookup and trusted client IP', 'Rate limits and funnel events', 'Bank-transfer handler and eligibility checker', 'The dashboard'], ['Stripe manual-capture hold handling', 'Bank-transfer auto-expiry and reminders', 'Failed-payment recording and nightly reconciliation', 'Amount-drift guard and ops alerts']), 'fraud-prevention': (['Monitor mode: every order scored and logged', 'Manual allow / block lists', 'Simulate a rule change before enforcing it'], ['Enforce mode and review-queue holds', 'Threat-feed sync (FireHOL, Spamhaus, Tor, disposable email)', 'Email alerts']), 'review-requests': (['Configure per channel, preview the email', 'Test-send to yourself'], ['Scheduled sending after every order', 'Exclusions, cooldown and one-click unsubscribe in production']), 'quotations': (['Quote builder with live catalogue pricing', 'Previews and drafts', 'Storefront quote requests landing in the inbox'], ['Sending the signed accept / decline link', 'Auto-chasers, expiry reminders and auto-expiry', 'Accepted quote to draft order']), 'geo-block': (['Configure regions, rules and allowlists', '"What-if" simulator and audit log in the admin'], ['Live enforcement: the storefront endpoint reports the real decision (free tier always answers enabled: false)']), 'visitor-analytics': (['Tracking and data collection with the storefront helpers', 'Privacy controls (DNT, IP anonymisation, consent gate)'], ['Dashboards, funnels, exit pages and search analytics (403 on the free tier)', 'Product recommendations and abandoned-cart recovery links'])}
 # Plugins currently shown in Vendure's own plugin directory.
 VENDURE_DIRECTORY_LISTED = ['email-tracking', 'fraud-prevention', 'geo-block', 'quotations', 'review-requests', 'visitor-analytics']
+# Submitted to the directory (2026-09-23) but not yet listed; move to LISTED when Vendure publishes them.
+VENDURE_DIRECTORY_SUBMITTED = ['payments', 'business-credit', 'checkout-guard']
 # Plugins that register TypeORM entities and therefore need a migration; the
 # others create their tables on boot.
 NEEDS_MIGRATION = ['email-tracking', 'geo-block', 'visitor-analytics', 'payments']
@@ -1167,6 +1169,8 @@ def index_page():
             bits.append(f'{dl:,} downloads/mo')
         if p['slug'] in VENDURE_DIRECTORY_LISTED:
             bits.append('<a href="https://docs.vendure.io/plugins" class="underline underline-offset-2">Vendure directory</a>')
+        elif p['slug'] in VENDURE_DIRECTORY_SUBMITTED:
+            bits.append('Vendure directory: submitted')
         return ('<p class="mt-3 text-xs text-ink-500">' + ' · '.join(bits) + '</p>') if bits else ''
     short_features = {
         'business-credit': [
@@ -1490,6 +1494,8 @@ export const config: VendureConfig = {{
         proof_items.append(f'<a href="https://www.npmjs.com/package/{p["pkg"]}" class="vp-proof-item">{dl:,} npm downloads last month</a>')
     if p['slug'] in VENDURE_DIRECTORY_LISTED:
         proof_items.append('<a href="https://docs.vendure.io/plugins" class="vp-proof-item">Listed in the Vendure plugin directory</a>')
+    elif p['slug'] in VENDURE_DIRECTORY_SUBMITTED:
+        proof_items.append('<span class="vp-proof-item">Submitted to the Vendure plugin directory</span>')
     proof_items.append('<span class="vp-proof-item">Vendure 3.5 – 3.7</span>')
     proof_items.append('<span class="vp-proof-item">MySQL · MariaDB · PostgreSQL</span>')
     proof_items.append('<span class="vp-proof-item">AGPL source + commercial licence</span>')
