@@ -169,6 +169,7 @@ def ccy_picker_html(select_id: str, mobile: bool = False) -> str:
 COMMON_FEATURES = [
     ('MySQL, MariaDB & PostgreSQL', 'The plugin follows whatever database your Vendure `dbConnectionOptions` use — no configuration. Verified against PostgreSQL 17; MySQL/MariaDB installs are unchanged.'),
     ('Buy & activate from the admin', 'Start the 14-day free trial, subscribe or buy lifetime from the plugin\'s admin page — checkout opens in a new tab and the key installs itself within a minute, renewals included. The same card shows your plan, first-charge date and a <strong>Manage billing</strong> link to the Stripe portal (update card, cancel, switch plan). Already have a key? Paste it into the same banner. No `.env` edit, no redeploy; environment keys still take precedence for infrastructure-as-code setups.'),
+    ('Weekly report, set-up checklist & dashboard widget', 'Every Monday the plugin emails whoever runs the store a short report of what it did that week — real numbers from your own database, week-over-week, with the next set-up step to take. Change the recipient, send a test or switch it off from the plugin\'s Settings tab (needs the host\'s `SMTP_*` settings). The same numbers sit in a Vendure dashboard widget (Dashboard → Add widget) and the plugin page opens with a set-up checklist that hides itself once everything is done.'),
     ('One-click in-app updates', 'When a new version ships, an update banner shows current → latest with a What\'s-new link to the changelog. "Update now" installs the registry-verified release via your project\'s own package manager (yarn/npm/pnpm auto-detected) and gracefully restarts under pm2/systemd. Disable with `HULO_SELF_UPDATE=off`.'),
 ]
 
@@ -211,6 +212,10 @@ def common_endpoints(slug: str):
         ('GET',  f'{pre}/licence/status',   'Admin: licence + evaluation + update status'),
         ('POST', f'{pre}/licence/activate', 'Admin: activate a licence key from the admin UI'),
         ('POST', f'{pre}/update/run',       'Admin: one-click in-app update + graceful restart'),
+        ('GET',  f'{pre}/digest/settings',  'Admin: weekly report recipient, last/next send'),
+        ('POST', f'{pre}/digest/send-test', 'Admin: email this week\'s report to you now'),
+        ('GET',  f'{pre}/setup',            'Admin: set-up checklist (what is still to do)'),
+        ('GET',  f'{pre}/widget',           'Admin: headline figures for the dashboard widget'),
     ]
 
 
